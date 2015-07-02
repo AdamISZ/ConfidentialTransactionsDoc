@@ -1,4 +1,6 @@
 \documentclass[10pt,a4paper]{article}
+\usepackage{fullpage}
+\usepackage{fancyvrb}
 \usepackage[latin1]{inputenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -22,6 +24,7 @@
 \DeclareCaptionFormat{myformat}{\fontsize{8}{9}\selectfont#1#2#3}
 \captionsetup{format=myformat}
 
+\author{Adam Gibson}
 \begin{document}
 
 \title{A deep-ish dive into Confidential Transactions.}
@@ -29,38 +32,41 @@
 
 \section{Introduction}
 
-What this document is not:
+\vskip 0.1 in \noindent \underline{What this document is not}:
 \begin{itemize}
 \item It is \textbf{not} an explanation of sidechains.
 \item It is \textbf{not} even a complete explanation of Confidential Transactions. It is already very long, but misses a few things like: how fees are dealt with, or special cases involving unblinded inputs/outputs.
 \item It is \textbf{not} guaranteed to be accurate, although obviously every effort has been made. You do not have permission to put money on the line based on what is written here (although I do give full permission for you to lose all your testnet coins).
 \end{itemize}
 
-\vskip 0.1 in \noindent What this document is:
+\vskip 0.1 in \noindent \underline{What this document is}:
 \vskip 0.1 in \noindent This serves as an amplification to \cite{ct_wu}.
 
 \vskip 0.1 in \noindent If you want to understand in detail how CT (I will use this abbreviation for `Confidential Transactions') works, this document may be useful. How useful it is to you personally will depend on your technical level.
-\vskip 0.1 in \noindent If you are a complete beginner to Bitcoin, clearly this is not for you. If you are an expert cryptographer, then the introductory sections are definitely not for you, as they include wordy descriptions of basic constructs (commitments for example). You would probably be better off going straight from \cite{ct_wu} to the code. The section at the end might serve as a useful description of the mechanics of Confidential Transactions.
+\vskip 0.1 in \noindent If you are a complete beginner to Bitcoin, this is probably not for you. If you are an expert cryptographer, then the introductory sections are definitely not for you, as they include wordy descriptions of basic constructs (commitments for example). You would probably be better off going straight from \cite{ct_wu} to the code. The section at the end might serve as a useful starting point on the mechanics of Confidential Transactions.
 
-\vskip 0.1 in \noindent If you are at a level where you are comfortable with the construction of Bitcoin transactions and understand what it means to add two points on an Elliptic curve, but only sketchily knowledgeable about cryptography generally, and keen to see the full picture of what Confidential Transactions is doing and how, then this might be helpful.
 
 \subsection{Prerequisites}
 
-What you need to understand at some level in order to fit all the following pieces together.
+I have endeavoured to make this description understandable to a relative novice in the cryptographic concepts, but of necessity some basic knowledge has to be assumed. Detailed understanding of algorithms aren't assumed (you \textit{don't} have to know: how to construct a hash function, how to add points on an elliptic curve, any details about what is required to make these constructs fully cryptographically secure). A passing familiarity with these concepts is helpful, though:
 
 \begin{itemize}
-\item Cryptographic hashes (here, SHA256, although that isn't important).
-\item Elliptic curve arithmetic basics (what you can and can't do with elliptic curves, not *how* you do it).
-\item The basic constructions of elliptic curve asymmetric cryptography: specifically, public and private keys.
-\item The basic structure of a bitcoin transaction (but *not* the lower level detail, e.g. Bitcoin Script).
+\item Modular arithmetic. Not theorems about it, but simply how adding and subtracting works in mod $N$.
+\item What makes cryptographic hashes (here, SHA256, although that isn't important) useful.
+\item Elliptic curve arithmetic basics (what you can and can't do with elliptic curve points, not \textit{how} you do it).
+\item The main idea of elliptic curve asymmetric cryptography: specifically, public and private keys and their relationship.
+\item The basic structure of a Bitcoin transaction (but *not* the lower level detail, e.g. Bitcoin Script).
 \end{itemize}
 
+\vskip 0.1 in \noindent I would hazard a guess that a person who's got as far as opening this document is not very likely to find the mathematics unintelligible. I would caution two things: (1) this a complicated structure, and takes time to digest, and (2) if you have never seen or understood simple examples involving adding elliptic curve points, then refer to one of the several primers on the net that exist for beginners in elliptic curve cryptography.
+
+\vskip 0.1 in \noindent A note about notation: when doing elliptic curve arithmetic, it's traditional to use lower case letters for ordinary numbers (integers) and upper case letters for curve points. Hence, in $xG + aH$, $x$ and $a$ are ordinary numbers and $G$ and $H$ are curve points.
 
 \subsection{Goals}
 
 Starting in a moment, things get technical very fast. It's important to understand where we're going. The idea of having transactions be private in a digital cash context is very old. David Chaum, in particular, blazed a trail in designing a kind of money where the amount could be hidden (blinded) while it was still ensured that money was not being stolen or created from nothing. The core idea behind it is closely connected to the idea of ``homomorphic encryption''. Suppose you have a bunch of data (\$100, -\$4, \$231) and you want to give that data to someone else to compute something - like the total - but you don't want that person to know what the amounts are - either the inputs, or the output (the result). Cryptography can do this for you, and it's (in certain contexts) called ``homomorphic'' (preserving structure being the crude meaning). Some of the rules of arithmetic that apply to the plain amounts also apply to the encrypted amounts, but the encrypted amounts don't leak any information about the original amounts. This is an active area of research, generally (see "Fully Homomorphic Encryption"). To get it for arbitrary data and arbitrary computations is still between difficult and impossible. But to get it for specific calculations, especially if they're very simple (and especially if they involve \textbf{only} adding, or \textbf{only} multiplying, and not both), is to some extent a solved problem.
 
-\vskip 0.1 in \noindent  If you're throwing your computations into the cloud for Amazon to do for you, and you're a big corporation doing god knows what, then \textit{only} being able to add numbers is a bit limiting, to say the least, and even more so if it slows the computations down appreciably. But for an application like digital cash this is not \textbf{so} much of a blockage.
+\vskip 0.1 in \noindent  If you're throwing your computations into the cloud for Amazon to do for you, and you're a big corporation doing God knows what, then \textit{only} being able to add numbers is a bit limiting, to say the least, and even more so if it slows the computations down appreciably. But for an application like digital cash this is not \textbf{so} much of a blockage.
 
 \vskip 0.1 in \noindent  To give you an inkling, before diving into the details, consider this simple mathematical fact: $a^b \times a^c = a^{b+c}$. Also, the result is equal to $a^{c+b}$. Notice that the addition of b and c works, and follows the normal addition rule (``commutativity'' - you can swap them round with no effect), even \textbf{after} we've put all the numbers into exponents. This is the kind of ``homomorphism'' that we can use to get the blinding/encryption effect. In certain circumstances, a construction like that can allow you to \textbf{do arithmetic on encrypted amounts}.
 
@@ -71,7 +77,7 @@ This part is well covered in \cite{ct_wu}, but here is a brief rewriting of it f
 
 \vskip 0.1 in \noindent In an ordinary bitcoin transaction, the amounts 1,2,3 and 0.5,5 would all be published into the transaction bytes, and so stored by all nodes on the network. The network verifies that 1+2+3 - (0.5+5) = 0 (ignoring fees for simplicity), and so accepts the transaction.
 
-\vskip 0.1 in \noindent  To hide the amounts and achieve the `homomorphic encryption' mentioned in the previous section, we use a Pedersen commitment (ref !!). Cryptographic commitments are a well known powerful technique, but they are usually used in a situation where you want to promise something is true before later proving it to be true, which enables a bunch of interesting types of systems to work. 
+\vskip 0.1 in \noindent  To hide the amounts and achieve the `homomorphic encryption' mentioned in the previous section, we use a Pedersen commitment \cite{Pedersen}. Cryptographic commitments are a well known powerful technique, but they are usually used in a situation where you want to promise something is true before later proving it to be true, which enables a bunch of interesting types of systems to work. 
 
 \vskip 0.1 in \noindent  Commitments are only possible because of the existence of one-way functions; you need to be able to produce an output that doesn't, on its own, reveal the input. Cryptographic hash functions (like SHA256) perform this role perfectly. If I want to commit to the value ``2'', I can send you its hash: 
 \vskip 0.1 in \noindent  53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3
@@ -79,7 +85,8 @@ This part is well covered in \cite{ct_wu}, but here is a brief rewriting of it f
 
 \vskip 0.1 in \noindent Instead of committing to ``2'', I commit to ``2''+some random data, like ``2xyzabc''. To put it more generally, we decide on a format like: SHA256(secret number || 6 random characters), just for example (the real life version will be more secure of course). Because SHA256 has the property that you can't generate ``collisions'' (can't create two inputs with the same output), this still gives us the same essential security feature: once I've made the commitment, I can't change my mind on what the value is later - and you can ask me to reveal it at a later stage of a protocol/system.
 
-So, a hash function provides the equipment to make commitments. However, what hash functions certainly don't have is any kind of homomorphism. There is certainly no rule like $\textrm{SHA256}(a) + \textrm{SHA256}(b) = \textrm{SHA256}(a+b)$. So this is no good for our purposes.
+\vskip 0.1 in \noindent This is a counterintuitive achievement, so make sure you get it before going further - I can choose a random number \textit{that I don't reveal to you in advance} and append it to my message ``2'', and even so, I still can't go back on my commitment. Because the output I create, the hash value, is absolutely impossible for me to regenerate with \textit{any} other message or random number. That's the power of cryptographic hashes (technically this property is called `second preimage resistance').
+\vskip 0.1 in \noindent So, a hash function provides the equipment to make commitments. However, what hash functions certainly don't have is any kind of homomorphism. There is certainly no rule like $\textrm{SHA256}(a) + \textrm{SHA256}(b) = \textrm{SHA256}(a+b)$. So this is no good for our purposes.
 
 \subsection{Pedersen commitments}
 
@@ -87,13 +94,13 @@ It turns out you can do something very similar with exponentiation modulo $N$. F
 
 \[g^1, g^2, g^3 .... g^{N-1} \]
 
-produces all the integer values in the group (so it in some sense ``generates'' the whole group). Having chosen a $g$ for $N$, you can create the commitment as
+\vskip 0.1 in \noindent produces all the integer values in the group (so it in some sense ``generates'' the whole group). Having chosen a $g$ for $N$, you can create the commitment as
 
 \[C = g^m \ \textrm{mod}\ N \]
 
-, where $m$ is the message you want to commit to. What's new here is what's keeping the value secret. Finding the $x$, given $C$,$g$ and $N$ is a "hard" problem - it's called the Discrete Logarithm Problem or DLP for short. It's a little like the problem of factoring very large numbers (although not the same), and like the latter, it's used to create cryptosystems with one-way functions. Input $x$, get out $C$ easily, but the reverse is essentially impossible if $N$ and $g$ are well chosen. 
+\vskip 0.1 in \noindent , where $m$ is the message you want to commit to. What's new here is what's keeping the value secret. Finding the $x$, given $C$,$g$ and $N$ is a ``hard'' problem - it's called the Discrete Logarithm Problem or DLP for short. It's a little like the problem of factoring very large numbers (although not the same), and like the latter, it's used to create cryptosystems with one-way functions. Input $x$, get out $C$ easily, but the reverse is essentially impossible if $N$ and $g$ are well chosen. 
 
-\vskip 0.1 in \noindent If you do it this way, though, you have the same ``semantic security'' problem mentioned above. Pedersen's commitment system addresses this in a similar way, with a random number: $C = g^m h^r$, where $h$ is *another* generator for the same group. When you create the commitment to the value $m$ you just have to decide on a random number $r$ (the values $g$, $h$ can be set in advance; although we'll discuss this later). Then when your counterparty challenges you to prove that your $C$ corresponds to a particular $m$, you just reveal $m$ and $r$ (this is called ``opening the commitment''). The DLP mentioned above is what makes $C$ hide the value of $m$, and the use of a separate generator $h$ is what makes it impossible to create a new $m'$ and $r'$ that provides the same $C$.
+\vskip 0.1 in \noindent If you do it this way, though, you have the same ``semantic security'' problem mentioned above. Pedersen's commitment system addresses this in a similar way, with a random number: $C = g^m h^r$, where $h$ is \textbf{another} generator for the same group. When you create the commitment to the value $m$ you just have to decide on a random number $r$ (the values $g$, $h$ can be set in advance; although we'll discuss this later). Then when your counterparty challenges you to prove that your $C$ corresponds to a particular $m$, you just reveal $m$ and $r$ (this is called ``opening the commitment''). The DLP mentioned above is what makes $C$ hide the value of $m$, and the use of a separate generator $h$ is what makes it impossible to create a new $m'$ and $r'$ that provides the same $C$.
 
 You should see from this discussion that Pedersen's, as well as other, commitment scheme is providing two key properties:
 \begin{itemize}
@@ -101,7 +108,7 @@ You should see from this discussion that Pedersen's, as well as other, commitmen
 \item \textbf{Binding} - having made the commitment $C(m)$ to $m$, you can't change your mind and open it as a commitment to a different message $m'$.
 \end{itemize}
 
-\vskip 0.1 in \noindent This is a bit of a sidetrack, apparently, but now things come together. In Pedersen's system we can exploit the homorphism I mentioned right at the start:
+\vskip 0.1 in \noindent This is a bit of a sidetrack, apparently, but now things come together. In Pedersen's system we can exploit the homomorphism I mentioned right at the start:
 
 \[C(A) \times C(B) = (g^A h^{r_A}) \times (g^B h^{r_B}) = g^{A+B} \times h^{r_A + r_B} = C(A+B) \]
 
@@ -115,7 +122,7 @@ We can do all of this with elliptic curve points as our basic mathematical objec
 \[C = mG \quad \textrm{ - elliptic curve point G added to itself m times} \]
 it performs pretty much exactly as:
 \[C = g^m \quad \textrm{ - number g multiplied by itself m times} \]
-did before. $G$ is now a generator \textbf{point} (sometimes called base point). Just as before, it is hard (effectively impossible) to derive $m$ from $C$ and $G$. $C$ is now a point rather than a number, so has coordinates on the curve $(x_C, y_C)$. This is exactly the same kind of crypto security as protects your bitcoin balances. It is called the ECDLP, just like the DLP but for elliptic curves. Obviously the question of how secure it is is a huge and highly technical topic. Bitcoin, and CT, works on the assumption that it is "computationally secure" - that is, it could theoretically be solved/cracked, but the computation cost of doing so is so large that in practice it's impossible.
+did before. $G$ is now a generator \textbf{point} (sometimes called base point). Just as before, it is hard (effectively impossible) to derive $m$ from $C$ and $G$. $C$ is now a point rather than a number, so has coordinates on the curve $(x_C, y_C)$. This is exactly the same kind of crypto security as protects your Bitcoin balances. It is called the ECDLP, just like the DLP but for elliptic curves. Obviously the question of how secure it is is a huge and highly technical topic. Bitcoin, and CT, works on the assumption that it is "computationally secure" - that is, it could theoretically be solved/cracked, but the computation cost of doing so is so large that in practice it's impossible.
 
 \vskip 0.1 in \noindent (A technical point, but one as well to get out of the way now: To represent such a point as a number (or a string of bytes), we don't have to print out the values of $x$ and $y$ (both of which are 32 bytes or 256 bits), but just the $x$ value plus a single flag to indicate positive or negative  $y$. That's because the curve is defined by an equation of the form $y^2 = x^3 + ax + b$, so for every positive $y$ value solution, there is one negative $y$ value solution. So an EC point (for a 256 bit curve, anyway) can be encoded into ~33 bytes.)
 
@@ -135,16 +142,41 @@ A note about the generators: $G$ is the generator that's specified as part of th
 \vskip 0.1 in \noindent $H$, on the other hand, is not part of the secp256k1 specification. We need $H$ to be basically a random number. But, just throwing a random one in there would not be secure (at least, not secure against the person who threw it in!) Why? Suppose an evil system designer chooses $H$, such that he knows $x_H$ obeys:
 \[H = x_H G \]
 This means he can change the amount $a$ that the commitment $C$ commits to, to anything he likes. In other words, we lose the property of `binding' described above. Here's how it would work:
-\vskip 0.1 in \noindent The attacker constructs a commitment to the value $a=2$: he first makes the EC point $2H$, then chooses a random blinding factor $x$, constructs $xG$ and adds it in: $C(2) = xG + 2H$. Later, he decides he would prefer the value to be $a=3$. If he doesn't know the value $x_H$ then he's stuck: he wants $C(2)$ to be $x'G + 3H$, which leaves him trying to find the value $x'$ that makes that work. But all he has is a new EC point: $C(2)-3H = x'G$ and from this he \textbf{cannot} find $x'$ - that's exactly the ECDLP, that is supposed to be unsolvable by the system design.
+\vskip 0.1 in \noindent The attacker constructs a commitment to the value $a=2$: he first makes the EC point $2H$, then chooses a random blinding factor $x$, constructs $xG$ and adds it in: $C(2) = xG + 2H$. Later, he decides he would prefer the value to be $a=3$. If he doesn't know the value $x_H$ then he's stuck: he wants $C(2)$ to be $x'G + 3H$, which leaves him trying to find the value $x'$ that makes that work. But all he has is a new EC point: $C(2)-3H = x'G$ and from this he \textbf{cannot} find $x'$ - that's exactly the ECDLP, that is supposed to be unsolvable by the ECC system design.
 \vskip 0.1 in \noindent However, our attacker has extra information: he knows $x_H$ such that $H = x_H G$. For him, the equation for $C(2)$ looks like this: 
 \[C(2) = xG + ax_{H}G = \left(x+2x_{H}\right)G \]
 If he wants to make $C(2)$ a commitment to 3 instead of 2, he just has to do simple arithmetic with the scalar numbers in parentheses: 
 \[C(2) = \left(\left(x-1x_{H}\right) + 3x_{H}\right)G \] 
 So he just publishes $x' = x-x_H$ as his new blinding factor, and $a=3$, and he's made a $C(3)$ which is the same as his earlier claimed $C(2)$.
 
-\vskip 0.1 in \noindent The upshot is, that in order for the Pedersen commitment scheme to work (without trust), we need $G$ and $H$ to be what is sometimes called `NUMS' - nothing up my sleeve numbers. There have been considerable discussions about the NUMS status of $G$, the generator for secp256k1 as used in Bitcoin ( ref!!). Assuming that it is indeed a NUMS (or, just trustworthy let's say), we are left here with the need for $H$ to also be a NUMS.
+\vskip 0.1 in \noindent The upshot is, that in order for the Pedersen commitment scheme to work (without trust), we need $H$ to be what is sometimes called `NUMS' - a nothing up my sleeve number. There have been considerable discussions about the NUMS status of the parameters in secp256k1 as used in Bitcoin \cite{secp256k1_nums}. Note that $G$ itself, in some sense, doesn't matter. Assuming that the other parameters are indeed NUMS (or, just trustworthy let's say), we are left here with the need for $H$ to also be a NUMS.
 
 \vskip 0.1 in \noindent For this reason, in CT, $H$ is chosen in a special way. The value of $H$ is the SHA256 hash of a simple encoding of the pre-specified $G$ (specifically, its $x$-coordinate). SHA256 outputs are random by design, so unless one believes that the creators of secp256k1 deliberately (and how?) found a $G$ such that if someone in the future hashed it and used it as a generator for a Pedersen commitment, it would create a value that they knew the discrete log of, we can trust that no one knows a $x_H$ such that $H = x_H  G$.
+
+\vskip 0.1 in \noindent
+Just to make things more concrete, here's the construction of $H$ done in Python. I'm using Python scripting with pybitcointools \cite{pbtc} as my `backend' for elliptic curve calculations in secp256k1.
+\vskip 0.1 in \noindent We have $G$, the generator for the curve built into our Python library \cite{pbtc}. 
+\begin{verbatim}
+	>>> import bitcoin as btc
+	>>> import os
+	H_x = int(sha256(btc.encode_pubkey(btc.G,'hex').decode('hex')).hexdigest(),16)
+	>>> H_x
+	36444060476547731421425013472121489344383018981262552973668657287772036414144L 
+\end{verbatim}
+
+We use a known mathematical trick to find $H_y$ efficiently \cite{residue}:
+\begin{verbatim}
+	>>> H_y = pow(int(H_x*H_x*H_x + 7), int((btc.P+1)//4), int(btc.P))
+	>>> H_y
+	93254584761608041185240733468443117438813272608612929589951789286136240436011L
+	>>> H = (H_x, H_y)
+\end{verbatim}
+
+Just for completeness, here's the compressed format for $H$:
+\begin{verbatim}
+	>>> btc.encode_pubkey(H,'hex_compressed')
+	'0350929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0'
+\end{verbatim}
 
 \vskip 0.1 in \noindent (Amusing side note: the pubkey $H$ in Bitcoin corresponds to the address:
 \vskip 0.1 in \noindent 1D8eDztgv79J59V7UBBpNGnRE6hjstqKb5
@@ -166,7 +198,7 @@ C = 3 BTC
 
 Fee ignored for simplicity - so the amounts obey $A + B + C - (D + E) = 0$. The amounts are stored as 64 bit integers, taking up 8 bytes each in the transaction as stored on the blockchain. To blind the amounts, we are going to replace those 8 byte amounts with a Pedersen commitment to each of the amounts. These will obey $C(A) + C(B) + C(C) - (C(D) + C(E)) = 0$. First, note that this means replacing each 8 byte amount with a 33 byte commitment (it was explained in the previous section why these Pedersen commitments should be 33 bytes). Second, remember from:
 \[C(m_1) + C(m_2) = m_{1}G + r_{1}H + m_{2}G +r_{2}H = (m_1+m_2)G +(r_1 + r_2)H = C(m_1+m_2) \]
-... that if we want $C(A+B)$ to be zero, it needs not only that $A+B$ is zero, but also that $r_A + r_B$ is zero. So it's necessary for the blinding factors chosen in constructing all the commitments also adds up to zero. We could draw this out something like this:
+... that if we want $C(m_1 + m_2 )$ to be zero, it needs not only that $m_1 + m_2 $ is zero, but also that $r_1 + r_2 $ is zero. So it's necessary for the blinding factors chosen in constructing all the commitments also adds up to zero. We could draw this out something like this:
 
 \vskip 0.1 in \noindent A blinded-amounts Bitcoin transaction in rudimentary form:
 \begin{verbatim}
@@ -186,11 +218,11 @@ where $x_{A,B,C,D}$ are random values chosen in transaction creation (32 byte va
 
 \vskip 0.1 in \noindent Now the transaction is published to the network and received by Nelly. Nelly can simply check that $C_A + C_B + C_C - C_D - C_E = 0$. She has no idea about blinding factors, and doesn't need to (remember the key properties of commitments? hiding and blinding). Again, ignoring fees, Nelly can mark the transaction as valid and propagate it (or mine it), because just that fact of the sum being zero means that no new Bitcoins were illegally created. The newly created unspent transaction outputs (``utxos''), with their commitments, represent valid tokens to be spent in future on the network.
 
-\vskip 0.1 in \noindent The pretty picture painted in the preceding paragraphs about how the transaction can be valid but its amounts kept secret - actually has a gaping security hole in it. If you've already read (ref!!), you'll know what I mean. If not, consider it a puzzle - what's wrong with this picture? I'll give you a clue: all calculations in the elliptic curve group secp256k1 are modulo $N$, where $N$ is the size of the group.
+\vskip 0.1 in \noindent The pretty picture painted in the preceding paragraphs about how the transaction can be valid but its amounts kept secret - actually has a gaping security hole in it. If you've already read \cite{ct_wu}, you'll know what I mean. If not, consider it a puzzle - what's wrong with this picture? I'll give you a clue: all calculations in the elliptic curve group secp256k1 are modulo $N$, where $N$ is the size of the group.
 
 \vskip 0.1 in \noindent If you can't figure it out, no worries - the explanation of this problem and its solution form the last, and largest section of this document. So back to that in a bit.
 
-\vskip 0.1 in \noindent The receiver Bob now has these new utxos, for D and E (let's say he owns both of the corresponding addresses). But here we hit a snag - he doesn't know the amounts! So he's grateful to Alice, but not so grateful - it's difficult to spend coins when you have no idea what their denomination is. If that wasn't bad enough, he also doesn't know the blinding factors, so he can't construct a new transaction at all.
+\vskip 0.1 in \noindent The receiver Bob now has these new utxos, for $D$ and $E$ (let's say he owns both of the corresponding addresses). But here we hit a snag - he doesn't know the amounts! So he's grateful to Alice, but not so grateful - it's difficult to spend coins when you have no idea what their denomination is. If that wasn't bad enough, he also doesn't know the blinding factors, so he can't construct a new transaction at all.
 
 \subsection{Enter ECDH}
 
@@ -200,7 +232,7 @@ To solve the problem mentioned at the end of the last section, Alice could send 
 
 \vskip 0.1 in \noindent What's needed is a way to share a secret between the sender and receiver without the receiver's involvement, and moreover to then find a space-saving way of embedding the secret information into the transaction without leaking it to Nelly or anyone else traversing the blockchain.
 
-\vskip 0.1 in \noindent Diffie Hellman (ref!!), or DH, key exchange is a standard way to solve that problem. Your browser may well be using it right now (e.g. on Firefox go to about:config, type `ssl3' into the search bar and you will see strings like `security.ssl3.dhe\_rsa\_aes\_128\_sha' - here the `dh' part refers to Diffie-Hellman key exchange). The basic idea is not a lot different from our earlier discussion of (specifically Pedersen-style) commitments. We will immediately jump to the elliptic curve form (ECDH), although it works the same with discrete log form.
+\vskip 0.1 in \noindent Diffie Hellman \cite{dhke}, or DH, key exchange is a standard way to solve that problem. Your browser may well be using it right now (e.g. on Firefox go to about:config, type `ssl3' into the search bar and you will see strings like `security.ssl3.dhe\_rsa\_aes\_128\_sha' - here the `dh' part refers to Diffie-Hellman key exchange). The basic idea is not a lot different from our earlier discussion of (specifically Pedersen-style) commitments. We will immediately jump to the elliptic curve form (ECDH), although it works the same with discrete log form.
 
 \begin{itemize}
 \item Alice has public key $A = aG$, so private key $a$.
@@ -209,9 +241,9 @@ To solve the problem mentioned at the end of the last section, Alice could send 
 \item The shared secret is just $S = aB = bA$. 
 \end{itemize}
 
-Alice can calculate the former ($aB$), Bob can calculate the latter ($bA$). Notation is tricky here; you might immediately think ``anyone can find that secret, it's just $A \times B$'', but no: there is no meaning to $A \times B$; you cannot multiply elliptic curve points together. You can only multiply an EC point by a scalar (a number) (and of course `multiply by a scalar' just means add the point to itself that many times). No one not knowing one of $a$ or $b$ can calculate $S$.
+Alice can calculate the former ($aB = S$), Bob can calculate the latter ($bA = S$). Notation is tricky here; you might immediately think ``anyone can find that secret, it's just $A \times B$'', but no: there is no meaning to $A \times B$; you cannot multiply elliptic curve points together. You can only multiply an EC point by a scalar (a number) (and of course `multiply by a scalar' just means add the point to itself that many times). No one not knowing one of $a$ or $b$ can calculate $S$.
 
-\vskip 0.1 in \noindent CT uses ECDH to achieve a powerful result: not only can the sender transfer the value and blinding factor information in encrypted form (encrypted in a special sense, but functionally it's encryption), but she can do it without using \textbf{any} more space in the transaction, and crucially \textbf{without any interaction in advance by the receiver}. This last point is why the previous suggestions were not even worth considering - in an online payment system like Bitcoin it's essential that the receiver does not have to ``be there''.
+\vskip 0.1 in \noindent CT uses ECDH to achieve a powerful result: not only can the sender transfer the value and blinding factor information in encrypted form (encrypted in a special sense, but functionally it's encryption), but she can do it without using \textbf{any} more space in the transaction, and crucially \textbf{without any interaction in advance by the receiver}.
 
 \vskip 0.1 in \noindent We're going to see in the next section how exactly this works.
 
@@ -223,7 +255,7 @@ Alice can calculate the former ($aB$), Bob can calculate the latter ($bA$). Nota
 
 \vskip 0.1 in \noindent base58check(<scanning key version byte> <normal address version byte> <scanning key> <normal address data bytes>)
 
-\vskip 0.1 in \noindent Base58 check is the special encoding Bitcoin uses to format addresses, and uses a checksum to prevent errors (see ref!!).
+\vskip 0.1 in \noindent Base58 check is the special encoding Bitcoin uses to format addresses, and uses a checksum to prevent errors \cite{b58check}.
 
 \section{The range proof}
 
@@ -246,7 +278,7 @@ and
 
 \vskip 0.1 in \noindent ..unsafe? The answer lies in the nature of modular arithmetic. Let's make a toy example: suppose we take the group of integers modulo 11. We can add 3 and 4 and get 7; we can use our new fancy crypto system for commitments, and know that $C(3) + C(4)$ will equal $C(7)$, even though someone looking can't tell what values the commitments correspond to. Great. But what happens when we do $C(9) + C(5)$? The problem is that $9 + 5 = 3 \ \textrm{mod}\ 11$. This output of `3' has been created in an illegal way, and although that precise case is not harmful (the output is too small), it makes for a very easy exploit. An example:
 
-\vskip 0.1 in \noindent How to construct illegal but undetectable free coins (toy system with modulus N=11):
+\vskip 0.1 in \noindent How to construct illegal but undetectable free coins (toy system with modulus $N=11$):
 \begin{verbatim}
 Inputs           Outputs
 A = C(1,x_A)
@@ -256,11 +288,11 @@ B = C(1,x_B)
 \end{verbatim}
 
 
-\vskip 0.1 in \noindent Now let's consider how the commitments look to Nelly the node. Because $1 + 1 -9 - 4 = -11 = 0 \ \textrm{mod} \ 11$, then adding the input commitments and subtracting the output commitments yields zero. Nelly says - OK! Meanwhile our attacker Alice has created lots of free coins: 13. In reality, the `9' amount might be illegal if we changed to the real $N$ (a 32 byte number, quite a lot bigger than 11!), since it might be bigger than the valid range (even if $< N$), but even if that is the case - the other output of `4', being small, could be be created freely as illegal coins. The network would never know this and the attacker could spend \textit{this} outputs in new transactions.
+\vskip 0.1 in \noindent Now let's consider how the commitments look to Nelly the node. Because $1 + 1 -9 - 4 = -11 = 0 \ \textrm{mod} \ 11$, then adding the input commitments and subtracting the output commitments yields zero. Nelly says - OK! Meanwhile our attacker Alice has created lots of free coins: 13-2 = 11. In reality, the `9' amount might be illegal if we changed to the real $N$ (a 32 bit number, quite a lot bigger than 11!), since it might be bigger than the valid range (even if $< N$), but even if that is the case - the other output of `4', being small, could be be used freely as illegal coins. The network would never know this and the attacker could spend \textit{this} outputs in new transactions.
 
-\vskip 0.1 in \noindent So modular arithmetic, an essential part of the cryptography, scuppers, it seems, the grand plan to hide the transaction amounts with Pedersen commitments. It would work fine with ordinary numbers in the set of integers (the infinite set), but not in a finite group of integers, modulo $N$ for some $N$ such as that in secp256k1.
+\vskip 0.1 in \noindent So modular arithmetic, an essential part of the cryptography, scuppers, it seems, the grand plan to hide the transaction amounts with Pedersen commitments. It would work fine with ordinary numbers in the set of integers (the infinite set $\mathbb{Z}$), but not in a finite group of integers, modulo $N$ for some $N$ such as that in secp256k1 - $N$ is the size of the group, so $kG$ will always be $\in \{0G, 1G, \ldots ,(N-1)G\}$ for integer $k$.
 
-This is the final problem that we need to solve in order to make Confidential Transactions work, and its solution is the most sophisticated part.
+\vskip 0.1 in \noindent This is the final problem that we need to solve in order to make Confidential Transactions work, and its solution is the most sophisticated part.
 
 \subsection{Borromean Ring Signatures}
 
@@ -268,11 +300,11 @@ A ring signature solves a problem that's pretty easy to understand: it's related
 
 \[A + B + C - D -E \]
 
-is true, we also want to know:
+i\vskip 0.1 in \noindent s true, we also want to know:
 
 \[0 <= A < 100\]
 
-for example, and the same for all of $B$,$C$,$D$,$E$. If $N$ is a huge number and all the numbers in our transaction are less than 100, then we're OK: you can't add 3 numbers less than 100 and get anything more than 300, so overflow of the type we discussed above would be impossible.
+\vskip 0.1 in \noindent for example, and the same for all of $B$,$C$,$D$,$E$. If $N$ is a huge number and all the numbers in our transaction are less than 100, then we're OK: you can't add 3 numbers less than 100 and get anything more than 300, so overflow of the type we discussed above would be impossible.
 
 \vskip 0.1 in \noindent That means, what we're looking for is a situation where the transaction creator (Alice from earlier) can only create a valid commitment such as $C(A)$ \textbf{if} $0 <= A < 100$. Now we can't do that directly - limit the value that Alice commits to - but what we can do is \textit{add} an extra piece of data, which we will call a ``rangeproof'', that proves that the commitment $C(A)$ is a commitment to a value in the range $(0,99)$. It's as if we had 100 cryptographers at the dining table, each one having names $0,1,2..99$, and we could take a ring signature from the group, knowing that 1 of the 100 made the signature; the extra detail is that \textit{he could only sign our special signature because his name was equal to the value of A}. 
 
@@ -280,15 +312,15 @@ for example, and the same for all of $B$,$C$,$D$,$E$. If $N$ is a huge number an
 
 \vskip 0.1 in \noindent Now, the basic idea of a ring signature has been known for some time, and there is certainly more than one way to create it. The Borromean ring signature \cite{borromean} is a carefully optimised form of a signature based on a clever combination of hash functions and elliptic curve calculations (the latter very similar to what we've already discussed for Pedersen commitments):
 
-\vskip 0.1 in \noindent Each "participant" (a cryptographer at the dining table, or a number in the range) has their associated public key, $P$. Let's called the first such participant Boris with public key $P_B$ (whose corresponding private key is $x_B$), and trace through what he can (and can't!) do to make a signature.
+\vskip 0.1 in \noindent Each ``participant'' (a cryptographer at the dining table, or a number in the range) has their associated public key, $P$. Let's called the first such participant Boris with public key $P_B$ (whose corresponding private key is $x_B$), and trace through what he can (and can't!) do to make a signature.
 
-\vskip 0.1 in \noindent He starts by making up a random number $k$, called the 'nonce' (common nomenclature in cryptography, meaning `number used once'). He then makes the corresponding EC point $K = kG$ (we are still working with Bitcoin's curve secp256k1 and its corresponding $G$, let's say). He takes the message he wants to sign, let's call it $m$, and constructs the hash $H(K||m)$ where $K$ has been put into a 33 byte form as usual, and $m$ has been appended to it, and we call this hash value $e$. Then, he finds the signature as follows: $s = k + x_{B}e$ (scalar numbers, not EC points). Finally, he publishes his signature as $(s,e,m)$, tied to Boris' pubkey $P_B$.
+\vskip 0.1 in \noindent He starts by making up a random number $k$, called the `nonce' (common nomenclature in cryptography, meaning `number used once'). He then makes the corresponding EC point $K = kG$ (we are still working with Bitcoin's curve secp256k1 and its corresponding $G$, let's say). He takes the message he wants to sign - in CT, we actually sign the commitment pubkey(s) themselves, since that binds the signature to the commitment pubkey - which we'll call $m$, and constructs the hash $H(K||m)$ where $K$ has been put into a 33 byte form as usual, and $m$ has been appended to it, and we call this hash value $e$. Then, he finds the signature as follows: $s = k + x_{B}e$ (scalar numbers, not EC points). Finally, he publishes his signature as $(s,e,m)$, tied to Boris' pubkey $P_B$.
 
 \vskip 0.1 in \noindent Now, suppose you want to verify the signature as valid. You take $s$ and multiply by $G$: $sG$, and subtract $eP_B$. This gives you:
 
 \[sG - eP_B = sG - ex_{B}G = (s - ex_{B})G = kG = K \]
 
-So now you have $K$ (although note! you never had $k$, nor $x_B$, and according to ECDLP, you can't work them out).
+\vskip 0.1 in \noindent So now you have $K$ (although note! you never had $k$, nor $x_B$, and according to ECDLP, you can't work them out).
 Then, you just reconstruct the hash: $H(K || m)$. Does it equal $e$? If so, the signature is valid.
 \vskip 0.1 in \noindent The thing to notice about this is the weird feedback loop when verifying: we needed to get $e$ to make the signature, to check it, but in this verify process, we take $e$ as one of the inputs $(s,e,m)$ and then produce it as the final output. Of course, there is no feedback loop in the initial signing - you can't use the output of the function as your input!
 
@@ -300,11 +332,9 @@ Then, you just reconstruct the hash: $H(K || m)$. Does it equal $e$? If so, the 
 
 \vskip 0.1 in \noindent Say the participants are Boris, Charlie, Donald and Edward. Form a loop/ring: $B \rightarrow C \rightarrow D \rightarrow E$ with $E$ connecting back to $B$. What we're going to do is to make a signature, just as above, for all 4, but with 2 differences: (1) all except one of the signatures will be forged/invalid, (2) each hash value $e = H(K||m)$ be a hash of the $K$ value for the public key \textit{before} it in the loop. So $C$'s $e_C = H(K_B || m)$, $e_D = H(K_C||m)$ etc.
 
-\vskip 0.1 in \noindent This structure allows *one* of Bob, Charlie, Donald and Edward to make a signature - the process is as follows. In this remember that the public (verification keys) for each participant, $P_B$, $P_C$, $P_D$, $P_E$ are known by everyone, while the corresponding private keys ($x_B$ etc.) are known only by that party.
+\vskip 0.1 in \noindent This structure allows \textbf{one} of Bob, Charlie, Donald and Edward to make a signature - the process is as follows. In this remember that the public (verification keys) for each participant, $P_B$, $P_C$, $P_D$, $P_E$ are known by everyone, while the corresponding private keys ($x_B$ etc.) are known only by that party.
 
 \vskip 0.1 in \noindent We'll assume Donald is the one to make the signature.
-He's going to construct a ring (loop) of signatures; he can start at any point. 
-This is one way he could do it:
 
 \begin{enumerate}
 \item Choose a nonce for himself, $k_D$, at random. Make $K_D = k_{D}G$.
@@ -328,15 +358,17 @@ s_D &=& e_{D}x_{D} - k_D
 \[ (e_B, s_B, e_C, s_C, e_D, s_D, e_E, s_E) \]
 \vskip 0.1 in \noindent Actually, all the e-values are determined if one is published along with all the s-values, so this is fine:
 \[(e_B, s_B, s_C, s_D, s_E)\]
-\vskip 0.1 in \noindent So to publish a ring signature for 4 parties in this system, we need to publish 5 32 byte numbers. 3 of the 4 s-values are just random nonsense, but the actual, real signature guarantees that a verifier will know that one of the 4 has signed with his private key, while not being able to tell which (as the numbers are indistinguishable from random).
+\vskip 0.1 in \noindent So to publish a ring signature for 4 parties in this system, we need to publish 5 32 byte numbers. 3 of the 4 $s$ values are just random nonsense, but the actual, real signature guarantees that a verifier will know that one of the 4 has signed with his private key, while not being able to tell which (as the numbers are indistinguishable from random).
 
-\vskip 0.1 in \noindent How does it look from a verifier's point of view? He can start at the node on the ring for which he has the e-value (it can be any, but in this case Boris). He can calculate $K_B = s_{B}G + e_{B}P_B$. From that, he can calculate the next e-value: $e_C = H(K || m || C)$, check the next sig value, and so on round the loop until he comes back to $e_B$ at the beginning. The signature is verified if he can recreate this hash correctly.
+\vskip 0.1 in \noindent How does it look from a verifier's point of view? He can start at the node on the ring for which he has the $e$ value (it can be any, but in this case Boris). He can calculate $K_B = s_{B}G + e_{B}P_B$. From that, he can calculate the next $e$ value: $e_C = H(K || m || C)$, check the next sig value, and so on round the loop until he comes back to $e_B$ at the beginning. The signature is verified if he can recreate this hash correctly.
 
 \vskip 0.1 in \noindent A high level understanding might be: a single signature uses a feedback loop to prevent forging; the ring signature version stretches out the feedback loop over a set of participants by using the chaining-signature design. So the signature is still impossible to forge in toto, unless you can short-circuit that feedback by having one or more of the private keys.
 
-\vskip 0.1 in \noindent What is described above is the most important part, but it is basically the "AOS" signature design as referred to in \cite{borromean} section 2.2. The Borromean structure adds one extra feature, to boost the compactness of the structure. Take two loops like those above and "join" one of the nodes. For example, suppose along with a signature over (Boris, Charlie, Donald, Edward) we also wanted a signature over (Bertha, Carol, Diana, Elizabeth). We keep the same structure as above for the two rings, except we ``join'' Boris and Bertha into one node. They still calculate their hashes like $e_B = H(K_E || M || B)$ but then we make a hash of those two hashes together: $e_B = H(H(K_{Edward} || M || Boris) || H(K_{Elizabeth} || M || Bertha))$. The effect of this is to make a single signature for which the loops cannot be validated without their being at least one genuine signer in \textbf{both} loops. Logically, this means we get a signature which can only be verified if (Boris or Charlie or Donald or Edward) AND (Bertha or Carol or Diana or Elizabeth) signed.
+\vskip 0.1 in \noindent What is described above is the most important part, but it is basically the ``AOS'' signature design as referred to in \cite{borromean} section 2.2. The Borromean structure adds one extra feature, to boost the compactness of the structure. Take two loops like those above and ``join'' one of the nodes. For example, suppose along with a signature over (Boris, Charlie, Donald, Edward) we also wanted a signature over (Bertha, Carol, Diana, Elizabeth). We keep the same structure as above for the two rings, except we ``join'' Boris and Bertha into one node. They still calculate their hashes like $e_B = H(K_E || M || B)$ but then we make a hash of those two hashes together: $e_B = H(H(K_{Edward} || M || Boris) || H(K_{Elizabeth} || M || Bertha))$. The effect of this is to make a single signature for which the loops cannot be validated without their being at least one genuine signer in \textbf{both} loops. Logically, this means we get a signature which can only be verified if (Boris or Charlie or Donald or Edward) AND (Bertha or Carol or Diana or Elizabeth) signed.
 
 \vskip 0.1 in \noindent You can join more than 2 loops at that one node (the 'B' node above). You can see that it doesn't actually matter \textit{which} node you join at, so for simplicity one can have $N$ loops joining all at the same node index.
+
+\vskip 0.1 in \noindent If you want to check your understanding of how the 9-step algorithm is modified by this ``joining at a node'' procedure in Borromean ring signatures, refer to section 3 of \cite{borromean} , also I wrote some example code in Python that conforms to the algorithm in CT \cite{borring}.
 
 \vskip 0.1 in \noindent What does the joining give us? A significant space saving in publishing the signatures. For a trivial example like the one above, with 2 loops joined together, it makes almost no difference - 2 loops separately would need 8 nodes and so a sig like ($e$, s(Boris), ....s(Edward),$e$,s(Bertha),... s(Elizabeth)), which you can see would be 8 + 2 = 10 numbers, all 32 bytes. With the Borromean style (connected), you'd need one less $e$ value (same $e$ value for both), so 9 numbers.
 \vskip 0.1 in \noindent But now imagine a case of 32 rings and 4 in each. Then without the Borromean topology, you'd need 32 * 4 + 32, whereas with it you'd need 32*4 + 1, which is a significant space saving (approaching 20\%).
@@ -345,37 +377,13 @@ s_D &=& e_{D}x_{D} - k_D
 
 \subsection{Implementation of a range proof}
 
-We now have the conceptual tools in place to solve the problem ``how to prove that a number is in a range'', but the devil is as always in the details. What actually happens in the code? We will try to figure it out concretely, using numbers and code snippets where appropriate. For the latter, I'm using Python scripting with pybitcointools \cite{pbtc} as my `backend' for elliptic curve calculations in secp256k1.
+We now have the conceptual tools in place to solve the problem ``how to prove that a number is in a range'', but the devil is as always in the details. What actually happens in the code? We will try to figure it out concretely, using numbers and code snippets where appropriate.
 
 \vskip 0.1 in \noindent Let's imagine Alice wants to create an output in her transaction, of size 1 BTC. The code will have to define what an appropriate range is: minimum 0, maximum 4294967295 satoshis, or 42.94967295 BTC. Why this particular number? Because it's $2^{32}-1$, so it's the maximum value we can store in a 32 bit integer data type. Remember that the idea is to create a Pedersen commitment to this value, $C$, and an associated range proof that its value is between 0 and 4294967295 satoshis. Its actual value will be 100000000 satoshis, but the network won't know that. We proceed as follows:
-\begin{verbatim}
-	>>> import bitcoin as btc
-	>>> import os
-\end{verbatim}
-We have $G$, the generator for the curve built in, but we'll also need the secondary generator $H$ as described in the ``Pedersen commitments'' section. Let's find its value, using the construct: $x$-coordinate of $H$ is the integer value of the sha256 digest of the uncompressed encoding of the generator $G$:
-\begin{verbatim}
-	H_x = int(sha256(btc.encode_pubkey(btc.G,'hex').decode('hex')).hexdigest(),16)
-	>>> H_x
-	36444060476547731421425013472121489344383018981262552973668657287772036414144L 
-\end{verbatim}
 
-We use a known mathematical trick to find $H_y$ efficiently (see ref!!):
-\begin{verbatim}
-	>>> H_y = pow(int(H_x*H_x*H_x + 7), int((btc.P+1)//4), int(btc.P))
-	>>> H_y
-	93254584761608041185240733468443117438813272608612929589951789286136240436011L
-	>>> H = (H_x, H_y)
-\end{verbatim}
-
-Just for completeness, here's the compressed format for $H$:
-\begin{verbatim}
-	>>> btc.encode_pubkey(H,'hex_compressed')
-	'0350929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0'
-\end{verbatim}
-
-Let's build the Pedersen commitment for our amount of 100000000 satoshis. Remember that the construct is:
+\vskip 0.1 in \noindent Let's build the Pedersen commitment for our amount of 100000000 satoshis. Remember that the construct is:
 \[C = xG + aH \]
-where $x$ is our blinding factor for this output. We can start by choosing that randomly:
+\vskip 0.1 in \noindent where $x$ is our blinding factor for this output. We can start by choosing that randomly:
 \begin{verbatim}
 	>>> x = os.urandom(32)
 	>>> import binascii
@@ -383,25 +391,25 @@ where $x$ is our blinding factor for this output. We can start by choosing that 
 	'c423ee7e2758e86254e110fd39eee4eaa232cf94fbaab710fdf811586937499e'
 \end{verbatim}
 
-This blinding factor will be kept secret between ourselves and the receiver of the output. Next, let's calculate the commitment $C$:
+\vskip 0.1 in \noindent This blinding factor will be kept secret between ourselves and the receiver of the output. Next, let's calculate the commitment $C$:
 \begin{verbatim}
 	>>> C = btc.fast_add(btc.fast_multiply(btc.G, btc.decode(x,256)),btc.fast_multiply(H,100000000))
 	>>> C
 	(33716128218899052265976399347815908056340330488994131284759589637119207433518L,
-	52864758971156851515686729448875905407492270100334584954397099441012230985012L)
+     52864758971156851515686729448875905407492270100334584954397099441012230985012L)
 \end{verbatim}
 
-Let's confirm that the Pedersen commitment scheme works. We'll make two other commitments $C2$ and $C3$, which sum to the same amount, and whose blinding factors sum to $x$, and show that $C - C2 - C3 = 0$.
+\vskip 0.1 in \noindent Let's confirm that the Pedersen commitment scheme works. We'll make two other commitments $C2$ and $C3$, which sum to the same amount, and whose blinding factors sum to $x$, and show that $C - C2 - C3 = 0$.
 \begin{verbatim}
 	>>> C2 = btc.fast_add(btc.fast_multiply(btc.G, 7),btc.fast_multiply(H,50000000))
 	>>> C3 = btc.fast_add(btc.fast_multiply(btc.G, btc.decode(x,256)-7),btc.fast_multiply(H,50000000))
 	>>> sum = btc.fast_add(C2,C3)
 	>>> sum
 	(33716128218899052265976399347815908056340330488994131284759589637119207433518L,
-	52864758971156851515686729448875905407492270100334584954397099441012230985012L)
+    52864758971156851515686729448875905407492270100334584954397099441012230985012L)
 \end{verbatim}
 
-As you can see, the result $= C$. I chose 7 and $x-7$ as two random numbers that added up to $x$. This is the basic integrity promise of the system - amounts are hidden but sums are preserved. Now, with our blinding factor $x$ in hand, we can construct a range proof - a proof that our amount was in the range 0 to 4294967295 satoshis.
+\vskip 0.1 in \noindent As you can see, the result $= C$. I chose 7 and $x-7$ as two random numbers that added up to $x$. This is the basic integrity promise of the system - amounts are hidden but sums are preserved. Now, with our blinding factor $x$ in hand, we can construct a range proof - a proof that our amount was in the range 0 to 4294967295 satoshis.
 
 \vskip 0.1 in \noindent The decimal amount 100000000 in binary is: 00000101111101011110000100000000. The leading zero digits can't be cut off, because remember the point of the exercise is to prove that it's \textbf{some} number in the range up to $2^{32} -1 = 4294967295$, without giving away which. If we want to construct a ring signature over each of these digits, we'd need 1 ring per digit and 2 pubkeys/verification keys per ring. To publish the signature, we'd need to publish the $e$ value, all the $s$ values (see the section on the Borromean ring signatures), and also the pubkeys we chose for each of the rings. So the total number of values we'd need to publish is: 1 + 32*2 + 32, or 97. This is an oversimplification, partly because the pubkeys are one byte longer than the signature and e values (33 instead of 32 bytes), and for one other technical reason that'll come up later. But it's good enough for now. Now 97*32 is about 3KB, but we can do better than this in terms of space usage.
 
@@ -413,7 +421,7 @@ As you can see, the result $= C$. I chose 7 and $x-7$ as two random numbers that
 
 \[ 0011331132010000 \]
 
-\vskip 0.1 in \noindent So we'll have 16 rings in the signature, each with 4 pubkeys corresponding to digit values (0,1,2,3). Constructing the Borromean signature will require us, as discussed in the section on that topic, to arrange for one of the pubkeys for each of those digits to be 'signable-for'. Let's take the third digit, which should have value '1', as an example. That amount is $4^{13} = 67108864$. So we need to construct a pubkey like this:
+\vskip 0.1 in \noindent So we'll have 16 rings in the signature, each with 4 pubkeys corresponding to digit values (0,1,2,3). Constructing the Borromean signature will require us, as discussed in the section on that topic, to arrange for one of the pubkeys for each of those digits to be `signable-for'. Let's take the third digit, which should have value '1', as an example. That amount is $4^{13} = 67108864$. So we need to construct a pubkey like this:
 
 \[C_{2} = x_{2}G + 67108864H \]
 
@@ -426,14 +434,15 @@ C_{22} &=& C_{2} - 134217728H \\
 C_{23} &=& C_{2} - 201326592H
 \end{eqnarray*}
 
-Now, when time comes to do the Borromean sign, we will be able to construct a \textbf{real} signature for $C_{21} = x_{2}G + 67108864H - 67108864H = x_{2}G$, because we have its private key: $x_{2}$, but not for any of the other values. Although the network will only know we signed one of the 4, not which one, it will still be satisfied with our arithmetic for the whole transaction, because it will check that this holds:
+\vskip 0.1 in \noindent Now, when time comes to do the Borromean sign, we will be able to construct a \textbf{real} signature for $C_{21} = x_{2}G + 67108864H - 67108864H = x_{2}G$, because we have its private key: $x_{2}$, but not for any of the other values. Although the network will only know we signed one of the 4, not which one, it will still be satisfied with our arithmetic for the whole transaction, because it will check that this holds:
 
 \[C = C_{0} + C_{1} + C_{2} + \ldots + C_{15}\]
 
 where $C$ is the commitment for this output, namely the pubkey we calculated before:
 
 \begin{verbatim}
-(33716128218899052265976399347815908056340330488994131284759589637119207433518L, 52864758971156851515686729448875905407492270100334584954397099441012230985012L)
+(33716128218899052265976399347815908056340330488994131284759589637119207433518L, 
+   52864758971156851515686729448875905407492270100334584954397099441012230985012L)
 \end{verbatim}
 
 To do this, we have to make sure that the blinding factors $x_{0} + x_{1} + x_{2} + \ldots + x{15}$ add up to $x$, i.e. the value (in hex) c423ee7e2758e86254e110fd39eee4eaa232cf94fbaab710fdf811586937499e, that we calculated as the overall blinding factor for $C$.
@@ -489,158 +498,131 @@ Now that we have the whole system in place, we can understand the structure of a
 
 \vskip 0.1 in \noindent 6594961e99c7bd271e0aea311bd32a759199c463ce3ac845c6bc7da3c5db2a1d 
 
-\vskip 0.1 in \noindent, and break down the elements in the following tabulation:
+\vskip 0.1 in \noindent The following is a breakdown of the 2634 bytes that were found in the 'serValue' field in the field `serValue' included in the transaction's first vout (output):
 
-
-\vskip 0.1 in \noindent serValue decoding for transaction 6594961e99c7bd271e0aea311bd32a759199c463ce3ac845c6bc7da3c5db2a1d
-, vout index 0.
-
-\vskip 0.1 in \noindent Pedersen commitment for this vout (no leading length byte, optimisation):
-\vskip 0.1 in \noindent \textbf{039459f96748d10350009372882d43fc15ab15768931ea2357b3921814f8ec4f18}
-
-\vskip 0.1 in \noindent \textbf{fd040a} - length of the following data, 2564 bytes
-
-\vskip 0.1 in \noindent Range proof begins:
-
-\vskip 0.1 in \noindent \textbf{40} - exponent encoding (exponent=0), minimum value encoding (minimum value = 0)
-
-\vskip 0.1 in \noindent \textbf{1f} - mantissa-1, 31 (so mantissa = 32 bits)
-
-\vskip 0.1 in \noindent \textbf{370e} - 1 sign byte for each 8 rings, here 2 bytes and 16 individual sign bits: 0011011100001110
-
-\vskip 0.1 in \noindent 15 commitment pubkeys, 1 for each ring -1 ; these are the `base'
-values each digit/ring which are then expanded using $C' = C -aH$ for
-each amount $H$ (the $aH$ are pre-computed to speed up processing).
-\vskip 0.1 in \noindent To complete the pubkey parsing, the 32 byte value here is combined
+\begin{Verbatim}[commandchars=\\\{\},numbers=left]
+tx 6594961e99c7bd271e0aea311bd32a759199c463ce3ac845c6bc7da3c5db2a1d, vout index 0.
+Pedersen commitment for this vout (no leading length byte, optimisation):
+\textbf{039459f96748d10350009372882d43fc15ab15768931ea2357b3921814f8ec4f18}
+\textbf{fd040a} - length of the following data, 2564 bytes
+Range proof begins:
+\textbf{40} - exponent encoding (exponent=0), minimum value encoding (minimum value = 0)
+\textbf{1f} - mantissa-1, 31 (so mantissa = 32 bits)
+\textbf{370e} - 1 sign byte for each 8 rings, here 2 bytes and 16 individual sign bits: 0011011100001110
+15 commitment pubkeys, 1 for each ring except the last ; these are the `base'
+values each digit/ring which are then expanded using C' = C -aH for
+each amount H (the aH are pre-computed to speed up processing).
+To complete the pubkey parsing, the 32 byte value here is combined
 with the sign bit (see above) to give the full pubkey.
 The reason that only 15 and not 16 are passed OTW is that one digit
 can be worked out by homomorphic subtraction.
-
-\vskip 0.1 in \noindent 
-\begin{verbatim}
-52e7932b1d5467a595737ad84d19d9d94a40f8d0ed1588e78e6687d5ee2bb05e
-7b6710efa9252df2f33026db2ba8d6f61c2b3ce6086de94fffb8f7ca7e9859c4
-b3716fbd96c128483e97cbda5b2c4782ae0584cea0d98b06bd8146b510493603
-5d90fef716a9f09bcf713f5e3d7191c6bc1dba7144b1faaaeda2f747e62e690c
-d50ba524af075208ce10f6c0781688d6aedd1bd3ead5d416d2d21669dd0340b2
-22dd1871c6251a53fe74a76de484a3b287be91eae9a8eddb300d1971ea1b4a57
-4301a76c00bf54327548b5f8a5ee5c0c2cbfd0df87e0fe566a0f2536daee9cfb
-6b381ea6c6e597a718b549262b193d578e6b69bec61998d39a48636e0a2258d4
-e31e3919d7ebd91fa302639888c670637e32d2734918a9db4410ed3cd7fc028a
-3d5d7422579e55c3235bd497953c82adc752cc72449d72d31482c5d8eab7feb0
-c281c56505aefc1451987eb04d725221ae95295a38b5b7809efa814be77f65b7
-fb469fb2ee289cffe484b0c9a3caa6a56643941fbd9163b48541850039973704
-85cb895c1fef3f9e1f837c6c2e3b819cec5267fb4faedbf5ea7f3b50092a39e6
-803236bf686cfb4b22015bb06583ce945b7bf3ad7a37706c90214349ac73a640
-129790ee61f645e6b893eb0663a1b1f53ddb2731f80f7c31fa72deeb872d2877
-\end{verbatim}
-
-\vskip 0.1 in \noindent The $e$ value ($e_0$) for the borromean ring signature over all the 
+\textbf{52e7932b1d5467a595737ad84d19d9d94a40f8d0ed1588e78e6687d5ee2bb05e}
+\textbf{7b6710efa9252df2f33026db2ba8d6f61c2b3ce6086de94fffb8f7ca7e9859c4}
+\textbf{b3716fbd96c128483e97cbda5b2c4782ae0584cea0d98b06bd8146b510493603}
+\textbf{5d90fef716a9f09bcf713f5e3d7191c6bc1dba7144b1faaaeda2f747e62e690c}
+\textbf{d50ba524af075208ce10f6c0781688d6aedd1bd3ead5d416d2d21669dd0340b2}
+\textbf{22dd1871c6251a53fe74a76de484a3b287be91eae9a8eddb300d1971ea1b4a57}
+\textbf{4301a76c00bf54327548b5f8a5ee5c0c2cbfd0df87e0fe566a0f2536daee9cfb}
+\textbf{6b381ea6c6e597a718b549262b193d578e6b69bec61998d39a48636e0a2258d4}
+\textbf{e31e3919d7ebd91fa302639888c670637e32d2734918a9db4410ed3cd7fc028a}
+\textbf{3d5d7422579e55c3235bd497953c82adc752cc72449d72d31482c5d8eab7feb0}
+\textbf{c281c56505aefc1451987eb04d725221ae95295a38b5b7809efa814be77f65b7}
+\textbf{fb469fb2ee289cffe484b0c9a3caa6a56643941fbd9163b48541850039973704}
+\textbf{85cb895c1fef3f9e1f837c6c2e3b819cec5267fb4faedbf5ea7f3b50092a39e6}
+\textbf{803236bf686cfb4b22015bb06583ce945b7bf3ad7a37706c90214349ac73a640}
+\textbf{129790ee61f645e6b893eb0663a1b1f53ddb2731f80f7c31fa72deeb872d2877}
+The e value (e_0) for the borromean ring signature over all the 
 digits. 32 byte hash:
-
-\vskip 0.1 in \noindent
-\begin{verbatim}
-1ba3941b54df283dc1a0b0358cea4fd126df12e8dd03a543de685102329581da
-\end{verbatim}
-
-
-\vskip 0.1 in \noindent Signature values - 32 byte hashes - 16 groups of 4. In each of 
+\textbf{1ba3941b54df283dc1a0b0358cea4fd126df12e8dd03a543de685102329581da}
+Signature values - 32 byte hashes - 16 groups of 4. In each of 
 the 16 rings, 1 of the 4 is not forged, and corresponds to the
 correct value of the digit in base 4.
-\begin{verbatim}
-504172e90f65ab7010ab3dd972aaeed28ac98cf25071b63067ae0eb89b337390
-db440aed43aea78bcca1aba516aab1cfa9b1ce224d3ebc7492bb1d02596034d8
-3df3b337370162ce11b8a077adb533fb8d82d48ec74adf6e4f6f6c6c2af65e49
-03cfd7e894631ed0e634a62ce22f342de70be8f59dbe048bbff94329763ad24e
+\textbf{504172e90f65ab7010ab3dd972aaeed28ac98cf25071b63067ae0eb89b337390}
+\textbf{db440aed43aea78bcca1aba516aab1cfa9b1ce224d3ebc7492bb1d02596034d8}
+\textbf{3df3b337370162ce11b8a077adb533fb8d82d48ec74adf6e4f6f6c6c2af65e49}
+\textbf{03cfd7e894631ed0e634a62ce22f342de70be8f59dbe048bbff94329763ad24e}
 
-f594a6eba4a403f5ac3d49ffd962eb09a606cee83aecd21e48203518ccee08e4
-2f6d1670d1de660ba93638073f8d4910464c28655074895d5fb21af23d25cb22
-3d3f4da030f43803be0d7f59a91a16fca841a509c66e9fbe413334b7fad2089f
-7bfe61bec8bee18ced3b1bbf0338b7f7e0201246c7cc0a1ddb5fd5013f11e732
+\textbf{f594a6eba4a403f5ac3d49ffd962eb09a606cee83aecd21e48203518ccee08e4}
+\textbf{2f6d1670d1de660ba93638073f8d4910464c28655074895d5fb21af23d25cb22}
+\textbf{3d3f4da030f43803be0d7f59a91a16fca841a509c66e9fbe413334b7fad2089f}
+\textbf{7bfe61bec8bee18ced3b1bbf0338b7f7e0201246c7cc0a1ddb5fd5013f11e732}
 
-f041610547addb7712190195020835b31cfdb498374f10d292faa5af764a1a5d
-f570561a7d869719649a2f0a7432eb8ba4a3002816773c054f5f74dc9d10d8ae
-db8364a5c326fa8d01fe021a3f078ef2991c175723c888df1eccc1413c2e3f45
-50c2e42ef4b6bb5589d9e08e9a0f2f2d31d0c1004e47fee86385b8ab6dc328d4
+\textbf{f041610547addb7712190195020835b31cfdb498374f10d292faa5af764a1a5d}
+\textbf{f570561a7d869719649a2f0a7432eb8ba4a3002816773c054f5f74dc9d10d8ae}
+\textbf{db8364a5c326fa8d01fe021a3f078ef2991c175723c888df1eccc1413c2e3f45}
+\textbf{50c2e42ef4b6bb5589d9e08e9a0f2f2d31d0c1004e47fee86385b8ab6dc328d4}
 
-65ebab5a0ff95fda1aba4fc2012ecaf820338ee46adaf5f468f60e864d591098
-f1c01dc9586ca14eb990eabdde889e29cbfc17a6dca7f7a5b2f599c070501fde
-614431ef3ebb1865691ed0829c5b82680b3f1a1f7d652752bc3fd07c54595f07
-6f802b5eaf3ada0497cafb74574b1e228ae1e3e5a57ffadf4185d9f41dbe63e5
+\textbf{65ebab5a0ff95fda1aba4fc2012ecaf820338ee46adaf5f468f60e864d591098}
+\textbf{f1c01dc9586ca14eb990eabdde889e29cbfc17a6dca7f7a5b2f599c070501fde}
+\textbf{614431ef3ebb1865691ed0829c5b82680b3f1a1f7d652752bc3fd07c54595f07}
+\textbf{6f802b5eaf3ada0497cafb74574b1e228ae1e3e5a57ffadf4185d9f41dbe63e5}
 
-55b19cf6e9c84d6952295b7425ed74ffa1faa1c8e45dec99fce68f1c20092f33
-11009e5f5e5d16ab5fdb5713927a46d9db097faa66056927a3434560141d40e2
-d5e70f4958ca6579e560563fd44f5099bf4be91feeefe8a11b51a81660814965
-6b4058f991a9b001d5f1de584581e31e2c18152ada0ff5b523af95df5566e10d
+\textbf{55b19cf6e9c84d6952295b7425ed74ffa1faa1c8e45dec99fce68f1c20092f33}
+\textbf{11009e5f5e5d16ab5fdb5713927a46d9db097faa66056927a3434560141d40e2}
+\textbf{d5e70f4958ca6579e560563fd44f5099bf4be91feeefe8a11b51a81660814965}
+\textbf{6b4058f991a9b001d5f1de584581e31e2c18152ada0ff5b523af95df5566e10d}
 
-360116b14d638299c017b74721097c94a8cfdfe6be1f8187a7c899be1ee55d91
-3241b5d03bd02f387d6505ff21264a99bbd99dff860528753317556f16af897d
-682e8e6760db4c3d68664083f9701910fc448d85750bcae49ae292417d8910e0
-1390b310cd95841aafe8f26146ef65bec8b3e86c332a6cfeabbb162fa403aac3
+\textbf{360116b14d638299c017b74721097c94a8cfdfe6be1f8187a7c899be1ee55d91}
+\textbf{3241b5d03bd02f387d6505ff21264a99bbd99dff860528753317556f16af897d}
+\textbf{682e8e6760db4c3d68664083f9701910fc448d85750bcae49ae292417d8910e0}
+\textbf{1390b310cd95841aafe8f26146ef65bec8b3e86c332a6cfeabbb162fa403aac3}
 
-386d09a273f7f523ea17fadc5cee64a926966cb8b9c79426178b5105a88e4247
-9a976fca592351797ef742873abf57b67c75a8bdf468f18712e8d1a207960c5e
-61de23007a0de3c46f24eb06229b6357b4e7c6351bea4ae80d0e82add09773fc
-7aeef8b9d7ae8d166a34cb2a9ae806e98e94bd045062752fc96ca9e13aa0d2c3
+\textbf{386d09a273f7f523ea17fadc5cee64a926966cb8b9c79426178b5105a88e4247}
+\textbf{9a976fca592351797ef742873abf57b67c75a8bdf468f18712e8d1a207960c5e}
+\textbf{61de23007a0de3c46f24eb06229b6357b4e7c6351bea4ae80d0e82add09773fc}
+\textbf{7aeef8b9d7ae8d166a34cb2a9ae806e98e94bd045062752fc96ca9e13aa0d2c3}
 
-f78f858136d22a19584d5c8da46cd782675e3f7ff11b0e682f9b4ccdbececbf6
-85a9757d94f6eb41e1c69b0404575da38344adcf88576885ef877bc029f764a8
-e2eb097e80e29de0bd005d03db08f8c763ac941ec65fda165d91e64d4c6ca04b
-44cceaf5b884f0aa94ca12559859a5701b4ff49a7377c686305ab331b0b0c9d6
+\textbf{f78f858136d22a19584d5c8da46cd782675e3f7ff11b0e682f9b4ccdbececbf6}
+\textbf{85a9757d94f6eb41e1c69b0404575da38344adcf88576885ef877bc029f764a8}
+\textbf{e2eb097e80e29de0bd005d03db08f8c763ac941ec65fda165d91e64d4c6ca04b}
+\textbf{44cceaf5b884f0aa94ca12559859a5701b4ff49a7377c686305ab331b0b0c9d6}
 
-7acbd6c7a7518977265f7932c6ab359b66ec6fb88637d2ba8b2cc22d3040febc
-951fdd9d7d3ab1a103483f2dd30375027b0257c2b16614ce1ded3aee8e32949e
-904f1592c0e15233eb2a5832933675769ccb411022bfc7053e7a9a8ccb976b60
-aabdc32ebe367021b55fbc6208311a65cb747864cde551558280de214e9349b6
+\textbf{7acbd6c7a7518977265f7932c6ab359b66ec6fb88637d2ba8b2cc22d3040febc}
+\textbf{951fdd9d7d3ab1a103483f2dd30375027b0257c2b16614ce1ded3aee8e32949e}
+\textbf{904f1592c0e15233eb2a5832933675769ccb411022bfc7053e7a9a8ccb976b60}
+\textbf{aabdc32ebe367021b55fbc6208311a65cb747864cde551558280de214e9349b6}
 
-c05914a328af16e6038985fa5d14519659625e75a50aeb182bc684bc3681b073
-6481f0fe0eaffa7095f9fc54a028449697d4788c29720b1b6466cdf65ab888f7
-c71bdf5b1934b51b2c85c7e7d451e55291c5cd3c52a1ed00a252b117fd566797
-3c8ece6c8379fe1618fd041bd41374f4829cd62c1ff8a0e708677501a23d357a
+\textbf{c05914a328af16e6038985fa5d14519659625e75a50aeb182bc684bc3681b073}
+\textbf{6481f0fe0eaffa7095f9fc54a028449697d4788c29720b1b6466cdf65ab888f7}
+\textbf{c71bdf5b1934b51b2c85c7e7d451e55291c5cd3c52a1ed00a252b117fd566797}
+\textbf{3c8ece6c8379fe1618fd041bd41374f4829cd62c1ff8a0e708677501a23d357a}
 
-285dcd441170045a5731a557c3fbff3d85db7762c94f6d0a0c9b5154ec816410
-0aed11a1ef39acf75f207af8a066dcabcdc5ea18a58289b36dc8e4dbaf7eb792
-632686348ddd67e32feff25a64d527c128804aa199e272947e1beb191e1bd6b8
-9fe2db052de3d87de7e0334504942a163055bd2cceb55c37bb91575a46a8e00d
+\textbf{285dcd441170045a5731a557c3fbff3d85db7762c94f6d0a0c9b5154ec816410}
+\textbf{0aed11a1ef39acf75f207af8a066dcabcdc5ea18a58289b36dc8e4dbaf7eb792}
+\textbf{632686348ddd67e32feff25a64d527c128804aa199e272947e1beb191e1bd6b8}
+\textbf{9fe2db052de3d87de7e0334504942a163055bd2cceb55c37bb91575a46a8e00d}
 
-4b14a932d5059bb44747d67a7814b87330457fd33ca71159e514ba8050101be2
-77b04c5bdb939f20fc88f18acfb016798e54b66a090f999a7b04766ce48d1d33
-b8b1494235da8c7ae4bf3d0cb0565ddaa5b7315dc5b235bcd76df2b74c636c21
-719d6f2c6ee04230391a35963b553c866cd6f91daddaedb7303a5f4030cd8725
+\textbf{4b14a932d5059bb44747d67a7814b87330457fd33ca71159e514ba8050101be2}
+\textbf{77b04c5bdb939f20fc88f18acfb016798e54b66a090f999a7b04766ce48d1d33}
+\textbf{b8b1494235da8c7ae4bf3d0cb0565ddaa5b7315dc5b235bcd76df2b74c636c21}
+\textbf{719d6f2c6ee04230391a35963b553c866cd6f91daddaedb7303a5f4030cd8725}
 
-4a933c3e4ae0fbfb018498309fdbeac66ff09151748c3b7b32336b69d0f4a69e
-9d49b6b7ec1ef82945e75749f3cf106bf42fff2a1ffb767ad1dc474eeaf058dc
-17b959534d2bf928bbfd0a04cf589d87c8bdd494940bf288b428ba8b840e2d93
-bd0dfb936df722fd05f15734cd199e60b179b4e61b02f2ceff1c0c8ef426d610
+\textbf{4a933c3e4ae0fbfb018498309fdbeac66ff09151748c3b7b32336b69d0f4a69e}
+\textbf{9d49b6b7ec1ef82945e75749f3cf106bf42fff2a1ffb767ad1dc474eeaf058dc}
+\textbf{17b959534d2bf928bbfd0a04cf589d87c8bdd494940bf288b428ba8b840e2d93}
+\textbf{bd0dfb936df722fd05f15734cd199e60b179b4e61b02f2ceff1c0c8ef426d610}
 
-8ae69a60d78f9cef569de9a3e3587a7b25a896bca2f0514f838c944619334806
-0eaa951d1de577ec41f8d5c3ba3ad29063768cebc8c64a7d0308f67db5dc7f67
-4cc878e67f6e5d3e899b010bf7e89ac40da55a3b0f1dd656c37d47281683a08d
-d823c7bad04c5a81726586dab1a2a95e18580c67a3e9459d34d057b938050370
+\textbf{8ae69a60d78f9cef569de9a3e3587a7b25a896bca2f0514f838c944619334806}
+\textbf{0eaa951d1de577ec41f8d5c3ba3ad29063768cebc8c64a7d0308f67db5dc7f67}
+\textbf{4cc878e67f6e5d3e899b010bf7e89ac40da55a3b0f1dd656c37d47281683a08d}
+\textbf{d823c7bad04c5a81726586dab1a2a95e18580c67a3e9459d34d057b938050370}
 
-058454a47f8a7fab7bfdb961646275c87dcea5bbc6cdf96a3c2c2420988461e7
-903d715653649fd4bc717967248adedfea96c10abbeffbdf21b560a4e3b3caf4
-555769c722dfb29e4c52ccec2c11894d77bff08299f21c46aa8b92399a7b9584
-fb1fe37acb3313351550bd23c963af6e0a62dfdbdc09140020766a5329929163
+\textbf{058454a47f8a7fab7bfdb961646275c87dcea5bbc6cdf96a3c2c2420988461e7}
+\textbf{903d715653649fd4bc717967248adedfea96c10abbeffbdf21b560a4e3b3caf4}
+\textbf{555769c722dfb29e4c52ccec2c11894d77bff08299f21c46aa8b92399a7b9584}
+\textbf{fb1fe37acb3313351550bd23c963af6e0a62dfdbdc09140020766a5329929163}
 
-41929b2051798ab1d8b3af57546c76d246befc5e6ba1e948c39013fa87fb6a80
-df639046dc03a6ce163df208620d819e210fb752ba1e6403609c4ca123645be5
-36982bf728e2f4b47d9b6890f52f097ecf1d1bd4584e018b34a421c1bb9b55c7
-89fb063a2097f44356c4a24f76788b28b3ead98f8f3851826ce637a6b31c13ec
-\end{verbatim}
-
-
-\vskip 0.1 in \noindent 21 - length byte, 33
-
-\vskip 0.1 in \noindent The ECDH pubkey for generating the nonce allowing the receiver
+\textbf{41929b2051798ab1d8b3af57546c76d246befc5e6ba1e948c39013fa87fb6a80}
+\textbf{df639046dc03a6ce163df208620d819e210fb752ba1e6403609c4ca123645be5}
+\textbf{36982bf728e2f4b47d9b6890f52f097ecf1d1bd4584e018b34a421c1bb9b55c7}
+\textbf{89fb063a2097f44356c4a24f76788b28b3ead98f8f3851826ce637a6b31c13ec}
+\textbf{21} - length byte, 33
+The ECDH pubkey for generating the nonce allowing the receiver
 to re-generate the random/forged signatures.
+\textbf{039437c731308c3256b980327e1b806e816e9c01267fe9a17e938864344148a8cf}
+\end{Verbatim}
 
-\begin{verbatim}
-039437c731308c3256b980327e1b806e816e9c01267fe9a17e938864344148a8cf
-\end{verbatim}
-
-
-\vskip 0.1 in \noindent Total bytes for the whole `serValue': 33 + 3 + 2564 + 1 + 33 = 2634 bytes
+\vskip 0.1 in \noindent The total number of bytes for the whole `serValue' field in this case is: 33 + 3 + 2564 + 1 + 33 = 2634 bytes
 
 \vskip 0.1 in \noindent As seen in the comments above, there are 2 optimizations to reduce space usage. First, we do not use 33 bytes for each of the $C_{i}$ Pedersen commitments for each digit. We use only 32, and encode the sign (which would usually be encoded using the byte '02' or '03') inside 1 or more 'sign bytes' at the start. Each sign byte can encode 8 sign bits, so in the default case of 16 rings for a 32 bit value, we use 2 sign bytes. The second optimisation is a feature of the Pedersen commitments. Remembering that this single transaction output has its overall Pedersen commitment, $C$, we always must have:
 \[C = C_{0} + C_{1} + ... + C_{15}\]
@@ -650,10 +632,10 @@ to re-generate the random/forged signatures.
 
 \subsection{The scanning key}
 
-Now that you can see the whole picture, it's easy to understand that if Alice or Bob decide to, they can share the nonce generated by the ECDH key exchange process, thus exposing the values and messages embedded in the transaction with other parties such as auditors. And they can do this without, of course, sharing the private keys for spending. This is clearly a very useful feature - selective privacy.
+Now that you can see the whole picture, it's easy to understand that if Alice or Bob decide to, they can share the nonce generated by the ECDH key exchange process, thus exposing the values and messages embedded in the transaction with other parties such as auditors. And they can do this without, of course, sharing the private keys for spending. This is clearly a very useful feature - selective transparency.
 
 
-Code references:
+\subsection{Code references}
 Most of the code for Confidential Transactions can be found in 
 
 \begin{verbatim}
@@ -668,13 +650,20 @@ src/{transaction.cpp, blind.cpp}
  \begin{thebibliography}{1}
 
   \bibitem{ct_wu} Confidential Transasctions write up by G. Maxwell: https://people.xiph.org/\~greg/confidential\_values.txt
-  \bibitem{chaum_dc} http://www.cs.elte.hu/\~rfid/dcrypt\_chaum.html
-  \bibitem{ms_ringsig} https://research.microsoft.com/en-us/um/people/yael/publications/2006-leak\_secret.pdf
-  \bibitem{borromean} https://github.com/Blockstream/borromean\_paper/
-  \bibitem{pbtc} https://github.com/vbuterin/pybitcointools
+  \bibitem{chaum_dc} The Dining Cryptographers Problem: Unconditional Sender and Recipient Untraceability, D Chaum http://www.cs.elte.hu/\~rfid/dcrypt\_chaum.html
+  \bibitem{ms_ringsig} How To Leak A Secret https://research.microsoft.com/en-us/um/people/yael/publications/2006-leak\_secret.pdf
+  \bibitem{borromean} Borromean Ring Signatures, G Maxwell, A Poelstra https://github.com/Blockstream/borromean\_paper/
+  \bibitem{pbtc} pybitcointools python bitcoin library, V Buterin https://github.com/vbuterin/pybitcointools
   \bibitem{rfc6979} Deterministic usage of the Digital Signature Algorithm: https://tools.ietf.org/html/rfc6979
   \bibitem{hmac} Wikipedia's description of HMAC: https://en.wikipedia.org/wiki/Hash-based\_message\_authentication\_code
+  \bibitem{secp256k1_nums} A discussion of the NUMS status of the secp256k1 curve (whole thread may be of interest) https://bitcointalk.org/index.php?topic=289795.msg3204734\#msg3204734
+  \bibitem{dhke} Wikipedia's description of Diffie Hellman key exchange: https://en.wikipedia.org/wiki/Diffie\%E2\%80\%93Hellman\_key\_exchange
+  \bibitem{residue} How to calculate y given x on the secp256k1 curve: https://en.wikipedia.org/wiki/Quadratic\_residue\#Prime\_or\_prime\_power\_modulus
+  \bibitem{b58check} Base58check encoding description: https://en.bitcoin.it/wiki/Base58Check\_encoding
+  \bibitem{pedersen} Original description of the concept behind Pedersen commitments - Non-Interactive and Information-Theoretic Secure Verifiable Secret Sharing, T Pedersen http://link.springer.com/chapter/10.1007\%2F3-540-46766-1\_9
+  \bibitem{borring} An implementation of Borromean ring signatures in Python, for learning, A Gibson https://github.com/AdamISZ/borring
   \end{thebibliography}
+  
   
 
 \end{document}
