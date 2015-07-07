@@ -14,7 +14,7 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.5 r10040"
-   sodipodi:docname="transaction.png">
+   sodipodi:docname="transaction.svg">
   <defs
      id="defs4">
     <marker
@@ -140,6 +140,34 @@
          d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
          transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
     </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Lend-1-1-4"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4108-86-7-7"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Lend-1-1-8"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4108-86-7-4"
+         style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -184,25 +212,25 @@
        x="46.34248"
        y="417.6701" />
     <rect
-       style="fill:none;stroke:#000000;stroke-width:5.7439518;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       style="fill:none;stroke:#000000;stroke-width:5.99566031;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
        id="rect3761"
-       width="909.77771"
+       width="991.26038"
        height="732.16931"
        x="23.931442"
        y="316.9827" />
     <rect
-       style="fill:none;stroke:#000000;stroke-width:1.66683471;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       style="fill:none;stroke:#000000;stroke-width:1.79559016;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
        id="rect3782"
-       width="510.47531"
+       width="592.38507"
        height="43.031353"
-       x="376.73013"
+       x="385.13773"
        y="374.58377" />
     <rect
        style="fill:none;stroke:#000000;stroke-width:1.15877831;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
        id="rect3782-7-3"
        width="246.71208"
        height="43.031353"
-       x="645.87677"
+       x="203.87677"
        y="870.32935" />
     <rect
        style="fill:none;stroke:#000000;stroke-width:1.73636115;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
@@ -230,21 +258,23 @@
          sodipodi:role="line"
          x="65.137253"
          y="460.71835"
-         id="tspan4516">scriptSig (100)</tspan><tspan
+         id="tspan4516">scriptSig (100<tspan
+   style="font-size:12.99999983000000014px;baseline-shift:super;font-weight:bold;-inkscape-font-specification:Sans Bold"
+   id="tspan4834">*</tspan>)</tspan><tspan
          sodipodi:role="line"
          x="65.137253"
          y="482.0166"
          id="tspan4518">seqno (4)</tspan></text>
     <text
        xml:space="preserve"
-       x="457.96326"
+       x="433.76312"
        y="366.0932"
        id="text3872-7"
        transform="scale(0.90908645,1.1000054)"
        style="font-size:15.46391678px"><tspan
          sodipodi:role="line"
          id="tspan3874-9"
-         x="457.96326"
+         x="433.76312"
          y="366.0932"><tspan
    style="font-size:20.61855698px"
    id="tspan5125">C</tspan><tspan
@@ -535,8 +565,8 @@
          id="tspan5022"
          style="fill:#0000ff"> amount (base 4)</tspan></text>
     <path
-       style="fill:none;stroke:#000000;stroke-width:1.44690454;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:4.3407131, 1.44690436;stroke-dashoffset:0"
-       d="m 313.03724,339.25744 3.54412,570.21251"
+       style="fill:none;stroke:#000000;stroke-width:1.38099778;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:4.14299273, 1.38099757;stroke-dashoffset:0"
+       d="m 313.03724,339.25744 3.54412,519.449"
        id="path5024"
        inkscape:connector-curvature="0" />
     <text
@@ -580,9 +610,9 @@
          sodipodi:role="line"
          x="364.55563"
          y="521.49438"
-         id="tspan5155">each digit (C0<tspan
+         id="tspan5155">each digit (C<tspan
    style="font-size:7.53876543px;baseline-shift:sub"
-   id="tspan5159">15</tspan> is</tspan><tspan
+   id="tspan5159">215</tspan> is</tspan><tspan
          sodipodi:role="line"
          x="364.55563"
          y="535.99182"
@@ -818,7 +848,7 @@
          y="689.03876"
          id="tspan5684">distinguish which.</tspan></text>
     <path
-       style="fill:none;stroke:#000000;stroke-width:1.32898796px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend-1)"
+       style="fill:none;stroke:#000000;stroke-width:1.329;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend-1);stroke-miterlimit:4;stroke-dasharray:none"
        d="m 511.48589,548.73683 79.74262,74.60863"
        id="path5220-2"
        inkscape:connector-curvature="0"
@@ -975,28 +1005,28 @@
          style="font-weight:bold;writing-mode:tb-rl;-inkscape-font-specification:Sans Bold">AND</tspan></text>
     <text
        xml:space="preserve"
-       x="608.62811"
+       x="591.02802"
        y="365.13712"
        id="text3872-7-8"
        transform="scale(0.90908645,1.1000054)"
        style="font-size:15.46391678px"><tspan
          sodipodi:role="line"
          id="tspan3874-9-0"
-         x="608.62811"
+         x="591.02802"
          y="365.13712">range proof (2564<tspan
    style="font-size:12.88659668px;font-weight:bold;baseline-shift:super;-inkscape-font-specification:Sans Bold"
    id="tspan3501">*</tspan>)</tspan></text>
     <text
        xml:space="preserve"
-       x="780.98163"
+       x="763.38153"
        y="365.13708"
        id="text3872-7-8-9"
        transform="scale(0.90908645,1.1000054)"
        style="font-size:15.46391678px"><tspan
          sodipodi:role="line"
          id="tspan3874-9-0-7"
-         x="780.98163"
-         y="365.13708">ECDH public key(32)</tspan></text>
+         x="763.38153"
+         y="365.13708">ECDH public key(33)</tspan></text>
     <path
        style="fill:none;stroke:#ac0000;stroke-width:2.57731962;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:none"
        d="m 606.13567,407.67011 0,26.77507"
@@ -1069,26 +1099,26 @@
          y="544.45569"
          id="tspan5684-0">Network can infer:</tspan></text>
     <rect
-       style="fill:none;stroke:#000000;stroke-width:1.66683471;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       style="fill:none;stroke:#000000;stroke-width:1.79732907;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
        id="rect3782-0"
-       width="510.47531"
+       width="593.53302"
        height="43.031353"
-       x="381.909"
+       x="385.909"
        y="812.2605" />
     <text
        xml:space="preserve"
        style="font-size:15.46391678px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       x="685.66229"
+       x="230.63673"
        y="853.60327"
        id="text3207"
        sodipodi:linespacing="125%"
        transform="scale(0.96258204,1.0388725)"><tspan
          sodipodi:role="line"
          id="tspan3209"
-         x="685.66229"
-         y="853.60327">Fee: Amt 00005479 sat. (4)</tspan><tspan
+         x="230.63673"
+         y="853.60327">Fee: Amt 0.00005479 btc (4)</tspan><tspan
          sodipodi:role="line"
-         x="685.66229"
+         x="230.63673"
          y="872.93317"
          id="tspan3211">(<tspan
    style="font-weight:bold;-inkscape-font-specification:Sans Bold"
@@ -1147,7 +1177,9 @@
          sodipodi:role="line"
          x="61.284176"
          y="585.94623"
-         id="tspan4520">scriptSig (100)</tspan><tspan
+         id="tspan4520">scriptSig (100<tspan
+   style="font-size:12.99999996999999929px;baseline-shift:super;font-weight:bold;-inkscape-font-specification:Sans Bold"
+   id="tspan4840">*</tspan>)</tspan><tspan
          sodipodi:role="line"
          x="61.284176"
          y="607.24445"
@@ -1236,14 +1268,14 @@
          id="tspan3537">factors add to zero.</tspan></text>
     <text
        xml:space="preserve"
-       x="469.07468"
+       x="444.87454"
        y="764.08057"
        id="text3872-7-7"
        transform="scale(0.90908645,1.1000054)"
        style="font-size:15.46391678px"><tspan
          sodipodi:role="line"
          id="tspan3874-9-2"
-         x="469.07468"
+         x="444.87454"
          y="764.08057"><tspan
    style="font-size:20.61855698px"
    id="tspan5125-6">C</tspan><tspan
@@ -1251,28 +1283,28 @@
    id="tspan3370-2">3</tspan>: abc....def(33)</tspan></text>
     <text
        xml:space="preserve"
-       x="619.73956"
+       x="597.73944"
        y="763.12451"
        id="text3872-7-8-7"
        transform="scale(0.90908645,1.1000054)"
        style="font-size:15.46391678px"><tspan
          sodipodi:role="line"
          id="tspan3874-9-0-75"
-         x="619.73956"
+         x="597.73944"
          y="763.12451">range proof (2564<tspan
    style="font-size:12.88659668px;font-weight:bold;baseline-shift:super;-inkscape-font-specification:Sans Bold"
    id="tspan3511">*</tspan>)</tspan></text>
     <text
        xml:space="preserve"
-       x="792.09302"
+       x="767.89288"
        y="763.12445"
        id="text3872-7-8-9-0"
        transform="scale(0.90908645,1.1000054)"
        style="font-size:15.46391678px"><tspan
          sodipodi:role="line"
          id="tspan3874-9-0-7-9"
-         x="792.09302"
-         y="763.12445">ECDH public key(32)</tspan></text>
+         x="767.89288"
+         y="763.12445">ECDH public key(33)</tspan></text>
     <text
        xml:space="preserve"
        x="38.86504"
@@ -1298,16 +1330,18 @@
          sodipodi:role="line"
          x="38.86504"
          y="986.52972"
-         id="tspan3461">(n)<tspan
+         id="tspan3461">(n<tspan
    style="font-size:15.46391678px;font-weight:bold;-inkscape-font-specification:Sans Bold"
-   id="tspan3517">*</tspan> - indicative amount, can vary</tspan><tspan
+   id="tspan3517">*<tspan
+   style="font-weight:normal;-inkscape-font-specification:Sans"
+   id="tspan4892">)</tspan></tspan>- indicative amount, can vary </tspan><tspan
          sodipodi:role="line"
          x="38.86504"
          y="1005.8596"
          id="tspan3469">abc...def: generic place holder for</tspan><tspan
          sodipodi:role="line"
          x="38.86504"
-         y="1025.1895"
+         y="1025.1896"
          id="tspan3471">hex values</tspan><tspan
          sodipodi:role="line"
          x="38.86504"
@@ -1386,5 +1420,80 @@
        height="47.932732"
        x="757.96991"
        y="951.54553" />
+    <text
+       xml:space="preserve"
+       x="937.53436"
+       y="762.94879"
+       id="text3872-7-8-9-0-3"
+       transform="scale(0.90908645,1.1000054)"
+       style="font-size:15.46391678px"><tspan
+         sodipodi:role="line"
+         id="tspan3874-9-0-7-9-6"
+         x="937.53436"
+         y="762.94879">scriptPubKey(25<tspan
+   style="font-size:13px;font-weight:bold;baseline-shift:super;-inkscape-font-specification:Sans Bold"
+   id="tspan7923">*</tspan>)</tspan></text>
+    <text
+       xml:space="preserve"
+       x="936.14728"
+       y="365.40967"
+       id="text3872-7-8-9-0-3-6"
+       transform="scale(0.90908645,1.1000054)"
+       style="font-size:15.46391678px"><tspan
+         sodipodi:role="line"
+         id="tspan3874-9-0-7-9-6-3"
+         x="936.14728"
+         y="365.40967">scriptPubKey(25<tspan
+   style="font-size:13px;font-weight:bold;baseline-shift:super;-inkscape-font-specification:Sans Bold"
+   id="tspan7917">*</tspan>)</tspan></text>
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:0.8470239;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect3782-7-3-9"
+       width="187.03456"
+       height="30.328032"
+       x="780.56885"
+       y="883.26044" />
+    <text
+       xml:space="preserve"
+       style="font-size:15.46391678px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="815.89056"
+       y="869.61688"
+       id="text3207-3"
+       sodipodi:linespacing="125%"
+       transform="scale(0.96258204,1.0388725)"><tspan
+         sodipodi:role="line"
+         x="815.89056"
+         y="869.61688"
+         id="tspan3211-1">Locktime (4) (default 0)</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend-1-1-8)"
+       d="m 193.94929,365.28728 0,16.16244 115.15739,0 0,175.76654"
+       id="path5218"
+       inkscape:connector-curvature="0"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend-1-1-8)"
+       d="m 333.35034,558.22641 0,-466.690471 51.51778,0"
+       id="path5221"
+       inkscape:connector-curvature="0"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend-1-1-8)"
+       d="m 249.50768,229.92684 0,42.4264"
+       id="path5227"
+       inkscape:connector-curvature="0"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend-1-1-8)"
+       d="m 950.55354,112.74914 0,388.90873"
+       id="path6095"
+       inkscape:connector-curvature="0"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow2Lend-1-1-8)"
+       d="m 866.71088,549.13504 0,26.26397"
+       id="path6905"
+       inkscape:connector-curvature="0"
+       transform="translate(0,308.2677)" />
   </g>
 </svg>
