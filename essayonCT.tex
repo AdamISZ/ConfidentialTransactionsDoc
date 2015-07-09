@@ -7,7 +7,8 @@
 \usepackage{amssymb}
 \usepackage{framed}
 \usepackage{pstricks}    %for embedding pspicture.
-\usepackage{graphicx} 
+\usepackage{graphicx}
+\usepackage{hyperref} 
 % (1) choose a font that is available as T1
 % for example:
 \usepackage{lmodern}
@@ -23,7 +24,7 @@
 
 \DeclareCaptionFormat{myformat}{\fontsize{8}{9}\selectfont#1#2#3}
 \captionsetup{format=myformat}
-
+\bibliographystyle{plain}
 \author{Adam Gibson}
 \begin{document}
 
@@ -35,7 +36,7 @@
 \vskip 0.1 in \noindent \underline{What this document is not}:
 \begin{itemize}
 \item It is \textbf{not} an explanation of sidechains.
-\item It is \textbf{not} even a complete explanation of Confidential Transactions. It is already very long, but misses a few things like: how fees are dealt with, or special cases involving unblinded inputs/outputs.
+\item It is \textbf{not} even a complete explanation of Confidential Transactions. It is already very long, but misses a few things like special cases involving unblinded inputs/outputs.
 \item It is \textbf{not} guaranteed to be accurate, although obviously every effort has been made. You do not have permission to put money on the line based on what is written here (although I do give full permission for you to lose all your testnet coins).
 \end{itemize}
 
@@ -55,7 +56,7 @@ I have endeavoured to make this description understandable to a relative novice 
 \item What makes cryptographic hashes (here, SHA256, although that isn't important) useful.
 \item Elliptic curve arithmetic basics (what you can and can't do with elliptic curve points, not \textit{how} you do it).
 \item The main idea of elliptic curve asymmetric cryptography: specifically, public and private keys and their relationship.
-\item The basic structure of a Bitcoin transaction (but *not* the lower level detail, e.g. Bitcoin Script).
+\item The basic structure of a Bitcoin transaction (but \textbf{not} the lower level detail, e.g. Bitcoin Script).
 \end{itemize}
 
 \vskip 0.1 in \noindent I would hazard a guess that a person who's got as far as opening this document is not very likely to find the mathematics unintelligible. I would caution two things: (1) this a complicated structure, and takes time to digest, and (2) if you have never seen or understood simple examples involving adding elliptic curve points, then refer to one of the several primers on the net that exist for beginners in elliptic curve cryptography.
@@ -64,7 +65,9 @@ I have endeavoured to make this description understandable to a relative novice 
 
 \subsection{Goals}
 
-Starting in a moment, things get technical very fast. It's important to understand where we're going. The idea of having transactions be private in a digital cash context is very old. David Chaum, in particular, blazed a trail in designing a kind of money where the amount could be hidden (blinded) while it was still ensured that money was not being stolen or created from nothing. The core idea behind it is closely connected to the idea of ``homomorphic encryption''. Suppose you have a bunch of data (\$100, -\$4, \$231) and you want to give that data to someone else to compute something - like the total - but you don't want that person to know what the amounts are - either the inputs, or the output (the result). Cryptography can do this for you, and it's (in certain contexts) called ``homomorphic'' (preserving structure being the crude meaning). Some of the rules of arithmetic that apply to the plain amounts also apply to the encrypted amounts, but the encrypted amounts don't leak any information about the original amounts. This is an active area of research, generally (see "Fully Homomorphic Encryption"). To get it for arbitrary data and arbitrary computations is still between difficult and impossible. But to get it for specific calculations, especially if they're very simple (and especially if they involve \textbf{only} adding, or \textbf{only} multiplying, and not both), is to some extent a solved problem.
+Starting in a moment, things get technical very fast. It's important to understand where we're going. The idea of having transactions be private in a digital cash context is very old. David Chaum, in particular, blazed a trail in designing a kind of money where the amount could be hidden (blinded) while it was still ensured that money was not being stolen or created from nothing \cite{chaum_bs}. This idea was initially applied to the following context: you want a bank to be the issuer of digital cash, but you want the users of the cash to be able to transact amounts that are kept private from the bank and any other observers. What will be described in this document, CT, is an attempt to create the same effect but in the much more radical context of a decentralised network, i.e. Bitcoin or more specifically a sidechain using Bitcoin. 
+
+\vskip 0.1 in \noindent The core idea behind how to achieve this is closely connected to the idea of ``homomorphic encryption''. Suppose you have a bunch of data (\$100, -\$4, \$231) and you want to give that data to someone else to compute something - like the total - but you don't want that person to know what the amounts are - either the inputs, or the output (the result). Cryptography can do this for you, and it's (in certain contexts) called ``homomorphic'' (preserving structure being the crude meaning). Some of the rules of arithmetic that apply to the plain amounts also apply to the encrypted amounts, but the encrypted amounts don't leak any information about the original amounts. This is an active area of research, generally (see "Fully Homomorphic Encryption"). To get it for arbitrary data and arbitrary computations is still between difficult and impossible. But to get it for specific calculations, especially if they're very simple (and especially if they involve \textbf{only} adding, or \textbf{only} multiplying, and not both), is to some extent a solved problem.
 
 \vskip 0.1 in \noindent  If you're throwing your computations into the cloud for Amazon to do for you, and you're a big corporation doing God knows what, then \textit{only} being able to add numbers is a bit limiting, to say the least, and even more so if it slows the computations down appreciably. But for an application like digital cash this is not \textbf{so} much of a blockage.
 
@@ -85,7 +88,7 @@ This part is well covered in \cite{ct_wu}, but here is a brief rewriting of it f
 
 \vskip 0.1 in \noindent Instead of committing to ``2'', I commit to ``2''+some random data, like ``2xyzabc''. To put it more generally, we decide on a format like: SHA256(secret number || 6 random characters), just for example (the real life version will be more secure of course). Because SHA256 has the property that you can't generate ``collisions'' (can't create two inputs with the same output), this still gives us the same essential security feature: once I've made the commitment, I can't change my mind on what the value is later - and you can ask me to reveal it at a later stage of a protocol/system.
 
-\vskip 0.1 in \noindent This is a counterintuitive achievement, so make sure you get it before going further - I can choose a random number \textit{that I don't reveal to you in advance} and append it to my message ``2'', and even so, I still can't go back on my commitment. Because the output I create, the hash value, is absolutely impossible for me to regenerate with \textit{any} other message or random number. That's the power of cryptographic hashes (technically this property is called `second preimage resistance').
+\vskip 0.1 in \noindent This is a counterintuitive achievement, so make sure you get it before going further - I can choose a random number \textit{that I don't reveal to you in advance} and append it to my message ``2'', and even so, I still can't go back on my commitment. Because the output I create, the hash value, is absolutely impossible for me to regenerate with \textit{any} other message and random number. That's the power of cryptographic hashes (technically this property is called `second preimage resistance').
 \vskip 0.1 in \noindent So, a hash function provides the equipment to make commitments. However, what hash functions certainly don't have is any kind of homomorphism. There is certainly no rule like $\textrm{SHA256}(a) + \textrm{SHA256}(b) = \textrm{SHA256}(a+b)$. So this is no good for our purposes.
 
 \subsection{Pedersen commitments}
@@ -98,11 +101,11 @@ It turns out you can do something very similar with exponentiation modulo $N$. F
 
 \[C = g^m \ \textrm{mod}\ N \]
 
-\vskip 0.1 in \noindent , where $m$ is the message you want to commit to. What's new here is what's keeping the value secret. Finding the $x$, given $C$,$g$ and $N$ is a ``hard'' problem - it's called the Discrete Logarithm Problem or DLP for short. It's a little like the problem of factoring very large numbers (although not the same), and like the latter, it's used to create cryptosystems with one-way functions. Input $x$, get out $C$ easily, but the reverse is essentially impossible if $N$ and $g$ are well chosen. 
+\vskip 0.1 in \noindent , where $m$ is the message you want to commit to. What's new here is what's keeping the value secret. Finding the $m$, given $C$,$g$ and $N$ is a ``hard'' problem - it's called the Discrete Logarithm Problem or DLP for short. It's a little like the problem of factoring very large numbers (although not the same), and like the latter, it's used to create cryptosystems with one-way functions. Input $m$, get out $C$ easily, but the reverse is essentially impossible if $N$ and $g$ are well chosen. 
 
 \vskip 0.1 in \noindent If you do it this way, though, you have the same ``semantic security'' problem mentioned above. Pedersen's commitment system addresses this in a similar way, with a random number: $C = g^m h^r$, where $h$ is \textbf{another} generator for the same group. When you create the commitment to the value $m$ you just have to decide on a random number $r$ (the values $g$, $h$ can be set in advance; although we'll discuss this later). Then when your counterparty challenges you to prove that your $C$ corresponds to a particular $m$, you just reveal $m$ and $r$ (this is called ``opening the commitment''). The DLP mentioned above is what makes $C$ hide the value of $m$, and the use of a separate generator $h$ is what makes it impossible to create a new $m'$ and $r'$ that provides the same $C$.
 
-You should see from this discussion that Pedersen's, as well as other, commitment scheme is providing two key properties:
+You should see from this discussion that Pedersen's, as well as other, commitment schemes are providing two key properties:
 \begin{itemize}
 \item \textbf{Hiding} - the commitment $C$ does not reveal the value it commits to.
 \item \textbf{Binding} - having made the commitment $C(m)$ to $m$, you can't change your mind and open it as a commitment to a different message $m'$.
@@ -112,7 +115,7 @@ You should see from this discussion that Pedersen's, as well as other, commitmen
 
 \[C(A) \times C(B) = (g^A h^{r_A}) \times (g^B h^{r_B}) = g^{A+B} \times h^{r_A + r_B} = C(A+B) \]
 
-\vskip 0.1 in \noindent It's as well to understand the mechanics of this very clearly: Alice can send $C(A)$ and, perhaps later, $C(B)$ to Bob. Bob holds those while other stuff gets done. Later, Bob can treat the product of those two values as a commitment to the sum $A+B$. In doing so, he would never know what $A$ and $B$ originally were, but he could be sure that mathematically $C(A+B)$ \textbf{must} be a commitment to the sum of A and B. Notice that Alice could have sent $C(A+1)$ and $C(B-1)$ and it would make no difference to what Bob sees.
+\vskip 0.1 in \noindent It's as well to understand the mechanics of this very clearly: Alice can send $C(A)$ and, perhaps later, $C(B)$ to Bob. Bob holds those while other stuff gets done. Later, Bob can treat the product of those two values as a commitment to the sum $A+B$. In doing so, he would never know what $A$ and $B$ originally were, but he could be sure that mathematically $C(A+B)$ \textbf{must} be a commitment to the sum of $A$ and $B$. Notice that Alice could have sent $C(A+1)$ and $C(B-1)$ and it would make no difference to what Bob sees.
 
 \vskip 0.1 in \noindent What about the random $r$ values? Notice that in $C(A+B)$, the $r$ value that Alice gives, if she opens the commitment (reveals $A+B$), must be the sum of $r_A$ and $r_B$, otherwise the final value will be wrong. But as long as she takes care to make sure that sum holds, it doesn't actually matter which $r$ values she chooses. We'll see this pattern play out later.
 
@@ -122,7 +125,7 @@ We can do all of this with elliptic curve points as our basic mathematical objec
 \[C = mG \quad \textrm{ - elliptic curve point G added to itself m times} \]
 it performs pretty much exactly as:
 \[C = g^m \quad \textrm{ - number g multiplied by itself m times} \]
-did before. $G$ is now a generator \textbf{point} (sometimes called base point). Just as before, it is hard (effectively impossible) to derive $m$ from $C$ and $G$. $C$ is now a point rather than a number, so has coordinates on the curve $(x_C, y_C)$. This is exactly the same kind of crypto security as protects your Bitcoin balances. It is called the ECDLP, just like the DLP but for elliptic curves. Obviously the question of how secure it is is a huge and highly technical topic. Bitcoin, and CT, works on the assumption that it is "computationally secure" - that is, it could theoretically be solved/cracked, but the computation cost of doing so is so large that in practice it's impossible.
+did before. $G$ is now a generator \textbf{point} (sometimes called base point). Just as before, it is hard (effectively impossible) to derive $m$ from $C$ and $G$ (and the curve). $C$ is now a point rather than a number, so has coordinates on the curve $(x_C, y_C)$. This is exactly the same kind of crypto security as protects your Bitcoin balances. It is called the ECDLP, just like the DLP but for elliptic curves. Obviously the question of how secure it is is a huge and highly technical topic. Bitcoin, and CT, works on the assumption that it is ``computationally secure'' - that is, it could theoretically be solved/cracked, but the computation cost of doing so is so large that in practice it's impossible.
 
 \vskip 0.1 in \noindent (A technical point, but one as well to get out of the way now: To represent such a point as a number (or a string of bytes), we don't have to print out the values of $x$ and $y$ (both of which are 32 bytes or 256 bits), but just the $x$ value plus a single flag to indicate positive or negative  $y$. That's because the curve is defined by an equation of the form $y^2 = x^3 + ax + b$, so for every positive $y$ value solution, there is one negative $y$ value solution. So an EC point (for a 256 bit curve, anyway) can be encoded into ~33 bytes.)
 
@@ -135,13 +138,13 @@ This still keeps the same homomorphic property, although we add the commitments 
 
 However, for technical reasons we change the notation here. Instead of the message being $m$ and the random number being $r$, we will use $a$ for the amount (because the message we're going to be committing (and hiding) is the bitcoin amount) and $x$ for the random number, which we're going to call a `blinding factor' (remember `semantic security' - we don't want someone to be able to figure out what the $a$ is just by looking at the $C$, so the random $x$ value `blinds' it). So now we have:
 \[C = xG + aH\]
-A note about the generators: $G$ is the generator that's specified as part of the parameters of the secp256k1 curve that Bitcoin uses; i.e. it's exactly the same G as in:
+A note about the generators: $G$ is the generator that's specified as part of the parameters of the secp256k1 curve that Bitcoin uses; i.e. it's exactly the same $G$ as in:
 
 \vskip 0.1 in \noindent Public key = (private key) * G
 
-\vskip 0.1 in \noindent $H$, on the other hand, is not part of the secp256k1 specification. We need $H$ to be basically a random number. But, just throwing a random one in there would not be secure (at least, not secure against the person who threw it in!) Why? Suppose an evil system designer chooses $H$, such that he knows $x_H$ obeys:
+\vskip 0.1 in \noindent $H$, on the other hand, is not part of the secp256k1 specification. We need $H$ to be basically a random point on the curve. But, just throwing a random one in there would not be secure (at least, not secure against the person who threw it in!) Why? Suppose an evil system designer chooses $H$, such that he knows an $x_H$ which obeys:
 \[H = x_H G \]
-This means he can change the amount $a$ that the commitment $C$ commits to, to anything he likes. In other words, we lose the property of `binding' described above. Here's how it would work:
+\vskip 0.1 in \noindent - in other words, the private key of $H$. This means he can change the amount $a$ that the commitment $C$ commits to, to anything he likes. In other words, we lose the property of `binding' described above. Here's how it would work:
 \vskip 0.1 in \noindent The attacker constructs a commitment to the value $a=2$: he first makes the EC point $2H$, then chooses a random blinding factor $x$, constructs $xG$ and adds it in: $C(2) = xG + 2H$. Later, he decides he would prefer the value to be $a=3$. If he doesn't know the value $x_H$ then he's stuck: he wants $C(2)$ to be $x'G + 3H$, which leaves him trying to find the value $x'$ that makes that work. But all he has is a new EC point: $C(2)-3H = x'G$ and from this he \textbf{cannot} find $x'$ - that's exactly the ECDLP, that is supposed to be unsolvable by the ECC system design.
 \vskip 0.1 in \noindent However, our attacker has extra information: he knows $x_H$ such that $H = x_H G$. For him, the equation for $C(2)$ looks like this: 
 \[C(2) = xG + ax_{H}G = \left(x+2x_{H}\right)G \]
@@ -149,13 +152,13 @@ If he wants to make $C(2)$ a commitment to 3 instead of 2, he just has to do sim
 \[C(2) = \left(\left(x-1x_{H}\right) + 3x_{H}\right)G \] 
 So he just publishes $x' = x-x_H$ as his new blinding factor, and $a=3$, and he's made a $C(3)$ which is the same as his earlier claimed $C(2)$.
 
-\vskip 0.1 in \noindent The upshot is, that in order for the Pedersen commitment scheme to work (without trust), we need $H$ to be what is sometimes called `NUMS' - a nothing up my sleeve number. There have been considerable discussions about the NUMS status of the parameters in secp256k1 as used in Bitcoin \cite{secp256k1_nums}. Note that $G$ itself, in some sense, doesn't matter. Assuming that the other parameters are indeed NUMS (or, just trustworthy let's say), we are left here with the need for $H$ to also be a NUMS.
+\vskip 0.1 in \noindent The upshot is, that in order for the Pedersen commitment scheme to work (without trust), we need $H$ to be what is sometimes called `NUMS' - a nothing up my sleeve number. There have been considerable discussions about the NUMS status of the parameters in secp256k1 as used in Bitcoin \cite{secp256k1_nums}. Note that $G$ itself, in some sense, doesn't matter. Assuming that the other curve parameters are indeed NUMS (or, just trustworthy let's say), we are left here with the need for $H$ to also be a NUMS.
 
 \vskip 0.1 in \noindent For this reason, in CT, $H$ is chosen in a special way. The value of $H$ is the SHA256 hash of a simple encoding of the pre-specified $G$ (specifically, its $x$-coordinate). SHA256 outputs are random by design, so unless one believes that the creators of secp256k1 deliberately (and how?) found a $G$ such that if someone in the future hashed it and used it as a generator for a Pedersen commitment, it would create a value that they knew the discrete log of, we can trust that no one knows a $x_H$ such that $H = x_H  G$.
 
 \vskip 0.1 in \noindent
 Just to make things more concrete, here's the construction of $H$ done in Python. I'm using Python scripting with pybitcointools \cite{pbtc} as my `backend' for elliptic curve calculations in secp256k1.
-\vskip 0.1 in \noindent We have $G$, the generator for the curve built into our Python library \cite{pbtc}. 
+\vskip 0.1 in \noindent We have $G$, the generator for the curve, provided by the Python library. 
 \begin{verbatim}
 	>>> import bitcoin as btc
 	>>> import os
@@ -276,7 +279,7 @@ and
 
 \[C(1,x_A) + C(2,x_B) + C(3,x_C) - C(0.5,x_D) - C(5,x_A + x_B + x_C - x_D) = 0\]
 
-\vskip 0.1 in \noindent ..unsafe? The answer lies in the nature of modular arithmetic. Let's make a toy example: suppose we take the group of integers modulo 11. We can add 3 and 4 and get 7; we can use our new fancy crypto system for commitments, and know that $C(3) + C(4)$ will equal $C(7)$, even though someone looking can't tell what values the commitments correspond to. Great. But what happens when we do $C(9) + C(5)$? The problem is that $9 + 5 = 3 \ \textrm{mod}\ 11$. This output of `3' has been created in an illegal way, and although that precise case is not harmful (the output is too small), it makes for a very easy exploit. An example:
+\vskip 0.1 in \noindent ..unsafe? The answer lies in the nature of modular arithmetic. Let's make a toy example: suppose we take the group of integers modulo 11. We can add 3 and 4 and get 7; we can use our new fancy crypto system for commitments, and know that $C(3) + C(4)$ will equal $C(7)$, even though someone looking can't tell what values the commitments correspond to. Great. But what happens when we do $C(9) + C(5)$? The problem is that $9 + 5 = 3 \ \textrm{mod}\ 11$. This output of `3' has been created in an illegal way. This makes for a very easy exploit. An example:
 
 \vskip 0.1 in \noindent How to construct illegal but undetectable free coins (toy system with modulus $N=11$):
 \begin{verbatim}
@@ -288,7 +291,7 @@ B = C(1,x_B)
 \end{verbatim}
 
 
-\vskip 0.1 in \noindent Now let's consider how the commitments look to Nelly the node. Because $1 + 1 -9 - 4 = -11 = 0 \ \textrm{mod} \ 11$, then adding the input commitments and subtracting the output commitments yields zero. Nelly says - OK! Meanwhile our attacker Alice has created lots of free coins: 13-2 = 11. In reality, the `9' amount might be illegal if we changed to the real $N$ (a 32 bit number, quite a lot bigger than 11!), since it might be bigger than the valid range (even if $< N$), but even if that is the case - the other output of `4', being small, could be be used freely as illegal coins. The network would never know this and the attacker could spend \textit{this} outputs in new transactions.
+\vskip 0.1 in \noindent Now let's consider how the commitments look to Nelly the node. Because $1 + 1 -9 - 4 = -11 = 0 \ \textrm{mod} \ 11$, then adding the input commitments and subtracting the output commitments yields zero. Nelly says - OK! Meanwhile our attacker Alice has created lots of free coins: 13-2 = 11. In reality, the `9' amount might be illegal if we changed to the real $N$ (a 32 bit number, quite a lot bigger than 11!), since it might be bigger than the valid range (even if $< N$), but even if that is the case - the other output of `4', being small, could be be used freely, even though 2 of those 4 coins were not legally derived. The network would never know this and the attacker could spend \textit{this} outputs in new transactions.
 
 \vskip 0.1 in \noindent So modular arithmetic, an essential part of the cryptography, scuppers, it seems, the grand plan to hide the transaction amounts with Pedersen commitments. It would work fine with ordinary numbers in the set of integers (the infinite set $\mathbb{Z}$), but not in a finite group of integers, modulo $N$ for some $N$ such as that in secp256k1 - $N$ is the size of the group, so $kG$ will always be $\in \{0G, 1G, \ldots ,(N-1)G\}$ for integer $k$.
 
@@ -298,15 +301,15 @@ B = C(1,x_B)
 
 A ring signature solves a problem that's pretty easy to understand: it's related to the famous ``Dining Cryptographers'' problem \cite{chaum_dc}, and the idea is expanded upon in Section 2.2 of \cite{ms_ringsig}. We want to know that one thing is true (in that case, that one person attests to the statement/leak), but we specifically \textbf{don't} want to know \textbf{which} one. It probably isn't at all obvious, but that kind of system could solve the modular arithmetic overflow problem above. Let's reframe the problem. Instead of just knowing that:
 
-\[A + B + C - D -E \]
+\[A + B + C - D -E = 0\]
 
-i\vskip 0.1 in \noindent s true, we also want to know:
+\vskip 0.1 in \noindent is true, we also want to know:
 
 \[0 <= A < 100\]
 
 \vskip 0.1 in \noindent for example, and the same for all of $B$,$C$,$D$,$E$. If $N$ is a huge number and all the numbers in our transaction are less than 100, then we're OK: you can't add 3 numbers less than 100 and get anything more than 300, so overflow of the type we discussed above would be impossible.
 
-\vskip 0.1 in \noindent That means, what we're looking for is a situation where the transaction creator (Alice from earlier) can only create a valid commitment such as $C(A)$ \textbf{if} $0 <= A < 100$. Now we can't do that directly - limit the value that Alice commits to - but what we can do is \textit{add} an extra piece of data, which we will call a ``rangeproof'', that proves that the commitment $C(A)$ is a commitment to a value in the range $(0,99)$. It's as if we had 100 cryptographers at the dining table, each one having names $0,1,2..99$, and we could take a ring signature from the group, knowing that 1 of the 100 made the signature; the extra detail is that \textit{he could only sign our special signature because his name was equal to the value of A}. 
+\vskip 0.1 in \noindent That means, what we're looking for is a situation where the transaction creator (Alice from earlier) can only create a valid commitment such as $C(A)$ \textbf{if} $0 <= A < 100$. Now we can't do that directly - limit the value that Alice commits to - but what we can do is \textit{add} an extra piece of data, which we will call a ``rangeproof'', that proves that the commitment $C(A)$ is a commitment to a value in the range $[0,99]$. It's as if we had 100 cryptographers at the dining table, each one having names $0,1,2..99$, and we could take a ring signature from the group, knowing that 1 of the 100 made the signature; the extra detail is that \textit{he could only sign our special signature because his name was equal to the value of A}. 
 
 \vskip 0.1 in \noindent So we know that $A$ is in that range 0 - 99, but we don't know what it is. If we then attach that special signature (=rangeproof) to our input $A$ in our transaction, and do the same for $B$, $C$, $D$, $E$, then we have achieved the goal - the transaction, including the rangeproof for each input and output, \textbf{must} be valid, even though we don't know the amounts. Very important to see: what guarantees the ranges is that Alice couldn't have created valid rangeproofs unless $A$ (and $B$,$C$,$D$,$E$) is in that specific range we decided on.
 
@@ -322,7 +325,7 @@ i\vskip 0.1 in \noindent s true, we also want to know:
 
 \vskip 0.1 in \noindent So now you have $K$ (although note! you never had $k$, nor $x_B$, and according to ECDLP, you can't work them out).
 Then, you just reconstruct the hash: $H(K || m)$. Does it equal $e$? If so, the signature is valid.
-\vskip 0.1 in \noindent The thing to notice about this is the weird feedback loop when verifying: we needed to get $e$ to make the signature, to check it, but in this verify process, we take $e$ as one of the inputs $(s,e,m)$ and then produce it as the final output. Of course, there is no feedback loop in the initial signing - you can't use the output of the function as your input!
+\vskip 0.1 in \noindent The thing to notice about this is the weird feedback loop when verifying: we needed to get $e$ to make the signature, but in this verify process, we take $e$ as one of the inputs $(s,e,m)$ and then produce it as the final output. Of course, there is no feedback loop in the initial signing - you can't use the output of the function as your input!
 
 \vskip 0.1 in \noindent Just as important as knowing how to verify, is to know why it's impossible to forge the signature if you're not Boris. 
 
@@ -375,7 +378,7 @@ s_D &=& e_{D}x_{D} - k_D
 
 \vskip 0.1 in \noindent Whether other similar structures might offer more space savings or other advantages seems to be an open question according to \cite{borromean}.
 
-\subsection{Implementation of a range proof}
+\subsection{Building a range proof}
 
 We now have the conceptual tools in place to solve the problem ``how to prove that a number is in a range'', but the devil is as always in the details. What actually happens in the code? We will try to figure it out concretely, using numbers and code snippets where appropriate.
 
@@ -455,7 +458,7 @@ RFC6979 \cite{rfc6979} is a procedure for generating pseudo random numbers to us
 
 \vskip 0.1 in \noindent The pseudo random numbers are created in a kind of standard cryptographic way - you start with a seed value, and then uses hashes to create more random values, as many as you like. The procedure to do that, in this case, is something called HMAC \cite{hmac}. The simple version is that HMAC takes a specific hash function (in this case SHA256) and a `key' - a secret random number - and then generates a hash output that depends on that random number. You can then repeat this process, taking each output as the next input to the HMAC process, as many times as necessary. We call the very first input the `seed'.
 
-\vskip 0.1 in \noindent It's called deterministic because it always creates the \textbf{same} stream of pseudo-random numbers given the same seed. This is useful in exactly the context of CT - we want a big set of random numbers (the blinding factors) that look totally random to an outsider, but which will be the same for any 2 parties who know the secret value used to seed the process.
+\vskip 0.1 in \noindent It's called deterministic because it always creates the \textbf{same} stream of pseudo-random numbers given the same seed. This is sometimes called a `CSPRNG', short for ``cryptographically secure pseudo random number generator''. A CSPRNG is useful in exactly the context of CT - we want a big set of numbers (the blinding factors) that look totally random to an outsider, but which will be the same for any 2 parties who know the secret value used to seed the process. We didn't \emph{have} to use this particular CSPRNG for CT, but it serves the purpose well here.
 
 \vskip 0.1 in \noindent You'll remember from earlier that CT addresses are longer than normal Bitcoin addresses, like this:
 
@@ -490,15 +493,19 @@ So now he also knows which of the 64 signatures are forged, and which are (claim
 
 \vskip 0.1 in \noindent Of course, once he has extracted this message, he goes on to verify the ring signature and the Pedersen commitments, just as Nelly the node will have done, to check that the transaction is valid.
 
+\section{Completing the implementation}
+
+In this section we'll put all the above concepts together and see how they are used to build, first, a single transaction output and then we'll finish by looking at an entire transaction.
+
 \subsection{More details on format, and space saving optimization}
 
-Now that we have the whole system in place, we can understand the structure of a transaction output. A complete set of data for a valid Confidential Transactions output needs three elements: the Pedersen commitment to the output amount (which takes up 33 bytes, a compressed Bitcoin public key), the Borromean ring signature which acts as what we call ``rangeproof'', and the ECDH pubkey which we are calling the 'scanning key' (which takes 32 bytes).
+Now that we have the whole system in place, we can understand the structure of a transaction output. A complete set of data for a valid Confidential Transactions output needs three elements: the Pedersen commitment to the output amount (which takes up 33 bytes, a compressed Bitcoin public key), the Borromean ring signature which acts as what we call ``rangeproof'', and the ECDH pubkey which we are calling the 'scanning key' (which takes 33 bytes).
 
 \vskip 0.1 in \noindent The rangeproof is a large and complex structure, so we take an example transaction from the network - id:
 
 \vskip 0.1 in \noindent 6594961e99c7bd271e0aea311bd32a759199c463ce3ac845c6bc7da3c5db2a1d 
 
-\vskip 0.1 in \noindent The following is a breakdown of the 2634 bytes that were found in the 'serValue' field in the field `serValue' included in the transaction's first vout (output):
+\vskip 0.1 in \noindent The following is a breakdown of the 2634 bytes that were found in the field `serValue' included in the transaction's first vout (output):
 
 \begin{Verbatim}[commandchars=\\\{\},numbers=left]
 tx 6594961e99c7bd271e0aea311bd32a759199c463ce3ac845c6bc7da3c5db2a1d, vout index 0.
@@ -628,12 +635,31 @@ to re-generate the random/forged signatures.
 \[C = C_{0} + C_{1} + ... + C_{15}\]
 \vskip 0.1 in \noindent Because of this, the last value $C_{15}$ can be considered implicit, and deduced both by the network and the receiver, by subtracting the previous 15 values from the starting value $C$. That's why the rangeproof contains only 15, rather than 16, commitments for the digits.
 
-\vskip 0.1 in \noindent The upshot of this is that a typical transaction output needs ~ 2.5KB. So a typical CT transaction will take somewhere around 10KB of space.
+\vskip 0.1 in \noindent The upshot of this is that a typical transaction output needs ~ 2.5KB. So a typical CT transaction will take somewhere around 5-10kB of space.
 
 \subsection{The scanning key}
 
 Now that you can see the whole picture, it's easy to understand that if Alice or Bob decide to, they can share the nonce generated by the ECDH key exchange process, thus exposing the values and messages embedded in the transaction with other parties such as auditors. And they can do this without, of course, sharing the private keys for spending. This is clearly a very useful feature - selective transparency.
 
+\subsection{Fee handling}
+
+In a normal Bitcoin transaction, the fee is implicit - it's whatever is left over (or, it's $\Sigma$outputs - $\Sigma$inputs). CT cannot do that, as the amounts are not published to the network. For this reason, the fee amount is published explicitly (as a 4 byte amount, after the inputs and before the outputs). This of course has implications for the commitment scheme, but it's trivial to address. If we call the fee amount $f$, then Nelly merely checks the following equation (assuming two input Pedersen commitments $C_0 , C_1$ and 2 outputs $C_2 , C_3$):
+\[C_0 + C_1 -C_2 - C_3 - fH = 0\]
+Effectively, we have constructed a Pedersen commitment for the fee with blinding factor $x_f=0$.
+
+\subsection{Schematic of a full transaction}
+
+It's very difficult to 'hold in your head' all these pieces at the same time; the following diagram, showing an entire transaction, but with a magnification of the range proof for one output, may help to see how these fits into a Bitcoin transaction.
+
+\vskip 0.1 in \noindent This example is fictitious, involving a transaction spending two previous outputs, so having two inputs, of 1.00005479 and 3 bitcoins respectively, and 2 outputs, the first of 1 btc (in line with section 3.3), for which the range proof structure has been shown in detail, and another output of 3 bitcoins, so that the (explicit) fee is 5479 satoshis.
+
+\begin{figure}[h]
+\raggedright
+\includegraphics[scale=0.5]{transaction.png}
+\caption{\emph{A near complete schematic of a CT transaction with 2 inputs and 2 outputs. The arrows show the path of serialization as it is published on the network. Some minor details are missing.}}
+\end{figure}
+
+\pagebreak
 
 \subsection{Code references}
 Most of the code for Confidential Transactions can be found in 
@@ -647,21 +673,22 @@ src/{transaction.cpp, blind.cpp}
 
 \pagebreak
 
- \begin{thebibliography}{1}
+ \begin{thebibliography}{33}
 
-  \bibitem{ct_wu} Confidential Transasctions write up by G. Maxwell: https://people.xiph.org/\~greg/confidential\_values.txt
-  \bibitem{chaum_dc} The Dining Cryptographers Problem: Unconditional Sender and Recipient Untraceability, D Chaum http://www.cs.elte.hu/\~rfid/dcrypt\_chaum.html
-  \bibitem{ms_ringsig} How To Leak A Secret https://research.microsoft.com/en-us/um/people/yael/publications/2006-leak\_secret.pdf
-  \bibitem{borromean} Borromean Ring Signatures, G Maxwell, A Poelstra https://github.com/Blockstream/borromean\_paper/
-  \bibitem{pbtc} pybitcointools python bitcoin library, V Buterin https://github.com/vbuterin/pybitcointools
-  \bibitem{rfc6979} Deterministic usage of the Digital Signature Algorithm: https://tools.ietf.org/html/rfc6979
-  \bibitem{hmac} Wikipedia's description of HMAC: https://en.wikipedia.org/wiki/Hash-based\_message\_authentication\_code
-  \bibitem{secp256k1_nums} A discussion of the NUMS status of the secp256k1 curve (whole thread may be of interest) https://bitcointalk.org/index.php?topic=289795.msg3204734\#msg3204734
-  \bibitem{dhke} Wikipedia's description of Diffie Hellman key exchange: https://en.wikipedia.org/wiki/Diffie\%E2\%80\%93Hellman\_key\_exchange
-  \bibitem{residue} How to calculate y given x on the secp256k1 curve: https://en.wikipedia.org/wiki/Quadratic\_residue\#Prime\_or\_prime\_power\_modulus
-  \bibitem{b58check} Base58check encoding description: https://en.bitcoin.it/wiki/Base58Check\_encoding
-  \bibitem{pedersen} Original description of the concept behind Pedersen commitments - Non-Interactive and Information-Theoretic Secure Verifiable Secret Sharing, T Pedersen http://link.springer.com/chapter/10.1007\%2F3-540-46766-1\_9
-  \bibitem{borring} An implementation of Borromean ring signatures in Python, for learning, A Gibson https://github.com/AdamISZ/borring
+  \bibitem{ct_wu} Confidential Transasctions write up by G. Maxwell: \url{https://people.xiph.org/~greg/confidential_values.txt}
+  \bibitem{chaum_bs} Blind Signatures for Payments, D Chaum : \url{http://www.hit.bme.hu/~buttyan/courses/BMEVIHIM219/2009/Chaum.BlindSigForPayment.1982.PDF}
+  \bibitem{chaum_dc} The Dining Cryptographers Problem: Unconditional Sender and Recipient Untraceability, D Chaum \url{http://www.cs.elte.hu/~rfid/dcrypt_chaum.html}
+  \bibitem{ms_ringsig} How To Leak A Secret \url{https://research.microsoft.com/en-us/um/people/yael/publications/2006-leak_secret.pdf}
+  \bibitem{borromean} Borromean Ring Signatures, G Maxwell, A Poelstra \url{https://github.com/Blockstream/borromean_paper/}
+  \bibitem{pbtc} pybitcointools python bitcoin library, V Buterin \url{https://github.com/vbuterin/pybitcointools}
+  \bibitem{rfc6979} Deterministic usage of the Digital Signature Algorithm: \url{https://tools.ietf.org/html/rfc6979}
+  \bibitem{hmac} Wikipedia's description of HMAC: \url{https://en.wikipedia.org/wiki/Hash-based_message_authentication_code}
+  \bibitem{secp256k1_nums} A discussion of the NUMS status of the secp256k1 curve (whole thread may be of interest) \url{https://bitcointalk.org/index.php?topic=289795.msg3204734#msg3204734}
+  \bibitem{dhke} Wikipedia's description of Diffie Hellman key exchange: \url{https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange}
+  \bibitem{residue} How to calculate y given x on the secp256k1 curve: \url{https://en.wikipedia.org/wiki/Quadratic_residue#Prime_or_prime_power_modulus}
+  \bibitem{b58check} Base58check encoding description: \url{https://en.bitcoin.it/wiki/Base58Check_encoding}
+  \bibitem{pedersen} Original description of the concept behind Pedersen commitments - Non-Interactive and Information-Theoretic Secure Verifiable Secret Sharing, T Pedersen \url{http://link.springer.com/chapter/10.1007%2F3-540-46766-1_9}
+  \bibitem{borring} An implementation of Borromean ring signatures in Python, for learning, A Gibson \url{https://github.com/AdamISZ/borring}
   \end{thebibliography}
   
   
