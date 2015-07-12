@@ -78,7 +78,7 @@ Starting in a moment, things get technical very fast. It's important to understa
 
 This part is well covered in \cite{ct_wu}, but here is a brief rewriting of it for continuity. We have defined our goal as having the amount in transactions being private. So, suppose we have 3 inputs and two outputs (not atypical for Bitcoin). We spend, let's say, inputs (outputs of previous transactions) A=1btc, B=2btc, C=3btc and they are sent to outputs D=0.5btc, E=5.5btc.
 
-\vskip 0.1 in \noindent In an ordinary bitcoin transaction, the amounts 1,2,3 and 0.5,5 would all be published into the transaction bytes, and so stored by all nodes on the network. The network verifies that 1+2+3 - (0.5+5) = 0 (ignoring fees for simplicity), and so accepts the transaction.
+\vskip 0.1 in \noindent In an ordinary bitcoin transaction, the amounts 1,2,3 and 0.5,5.5 would all be published into the transaction bytes, and so stored by all nodes on the network. The network verifies that 1+2+3 - (0.5+5.5) = 0 (ignoring fees for simplicity), and so accepts the transaction.
 
 \vskip 0.1 in \noindent  To hide the amounts and achieve the `homomorphic encryption' mentioned in the previous section, we use a Pedersen commitment \cite{Pedersen}. Cryptographic commitments are a well known powerful technique, but they are usually used in a situation where you want to promise something is true before later proving it to be true, which enables a bunch of interesting types of systems to work. 
 
@@ -209,12 +209,12 @@ Inputs            Outputs
 A = C(1,x_A)
                   D = C(0.5,x_D)
 B = C(2,x_B)
-                  E = C(5,x_A + x_B + x_C - x_D)
+                  E = C(5.5,x_A + x_B + x_C - x_D)
 C = C(3,x_C)
 \end{verbatim}
 
 where $x_{A,B,C,D}$ are random values chosen in transaction creation (32 byte values). The blinding factor for the last number (although it could be any of the 5) is chosen to ensure that:
-\[C(1,x_A) + C(2,x_B) + C(3,x_C) - C(0.5,x_D) - C(5,x_A + x_B + x_C - x_D) = 0\]
+\[C(1,x_A) + C(2,x_B) + C(3,x_C) - C(0.5,x_D) - C(5.5,x_A + x_B + x_C - x_D) = 0\]
 - because the blinding factors add up to zero.
 
 \vskip 0.1 in \noindent It's important to take a step back at this point and see how this looks from different perspectives - that of the Alice, the sender, Bob, the receiver, and most importantly, Nelly, the node on the sidechain/Bitcoin network who relays this transaction or mines the block. Alice is the one that constructs all this data. For her inputs, she is taking the commitments (including blinding factors) from a previous output, so this data is set in advance. She constructs output amounts as she chooses, taking care that all the blinding factors together add to zero as mentioned above, and that the amounts (ignoring fees) also add to zero, then she can make output commitment values that will obey the property that their sum is zero.
@@ -272,12 +272,12 @@ Inputs           Outputs
 A = C(1,x_A)
                  D = C(0.5,x_D)
 B = C(2,x_B)
-                 E = C(5,x_A + x_B + x_C - x_D)
+                 E = C(5.5,x_A + x_B + x_C - x_D)
 C = C(3,x_C)
 \end{verbatim}
 and 
 
-\[C(1,x_A) + C(2,x_B) + C(3,x_C) - C(0.5,x_D) - C(5,x_A + x_B + x_C - x_D) = 0\]
+\[C(1,x_A) + C(2,x_B) + C(3,x_C) - C(0.5,x_D) - C(5.5,x_A + x_B + x_C - x_D) = 0\]
 
 \vskip 0.1 in \noindent ..unsafe? The answer lies in the nature of modular arithmetic. Let's make a toy example: suppose we take the group of integers modulo 11. We can add 3 and 4 and get 7; we can use our new fancy crypto system for commitments, and know that $C(3) + C(4)$ will equal $C(7)$, even though someone looking can't tell what values the commitments correspond to. Great. But what happens when we do $C(9) + C(5)$? The problem is that $9 + 5 = 3 \ \textrm{mod}\ 11$. This output of `3' has been created in an illegal way. This makes for a very easy exploit. An example:
 
