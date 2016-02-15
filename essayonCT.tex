@@ -80,7 +80,7 @@ This part is well covered in \cite{ct_wu}, but here is a brief rewriting of it f
 
 \vskip 0.1 in \noindent In an ordinary bitcoin transaction, the amounts 1,2,3 and 0.5,5.5 would all be published into the transaction bytes, and so stored by all nodes on the network. The network verifies that 1+2+3 - (0.5+5.5) = 0 (ignoring fees for simplicity), and so accepts the transaction.
 
-\vskip 0.1 in \noindent  To hide the amounts and achieve the `homomorphic encryption' mentioned in the previous section, we use a Pedersen commitment \cite{Pedersen}. Cryptographic commitments are a well known powerful technique, but they are usually used in a situation where you want to promise something is true before later proving it to be true, which enables a bunch of interesting types of systems to work. 
+\vskip 0.1 in \noindent  To hide the amounts and achieve the `homomorphic encryption' mentioned in the previous section, we use a Pedersen commitment \cite{pedersen}. Cryptographic commitments are a well known powerful technique, but they are usually used in a situation where you want to promise something is true before later proving it to be true, which enables a bunch of interesting types of systems to work. 
 
 \vskip 0.1 in \noindent  Commitments are only possible because of the existence of one-way functions; you need to be able to produce an output that doesn't, on its own, reveal the input. Cryptographic hash functions (like SHA256) perform this role perfectly. If I want to commit to the value ``2'', I can send you its hash: 
 \vskip 0.1 in \noindent  53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3
