@@ -140,7 +140,7 @@ However, for technical reasons we change the notation here. Instead of the messa
 \[C = xG + aH\]
 A note about the generators: $G$ is the generator that's specified as part of the parameters of the secp256k1 curve that Bitcoin uses; i.e. it's exactly the same $G$ as in:
 
-\vskip 0.1 in \noindent Public key = (private key) * G
+\vskip 0.1 in \noindent Public key = (private key) \times G
 
 \vskip 0.1 in \noindent $H$, on the other hand, is not part of the secp256k1 specification. We need $H$ to be basically a random point on the curve. But, just throwing a random one in there would not be secure (at least, not secure against the person who threw it in!) Why? Suppose an evil system designer chooses $H$, such that he knows an $x_H$ which obeys:
 \[H = x_H G \]
