@@ -93,11 +93,11 @@ This part is well covered in \cite{ct_wu}, but here is a brief rewriting of it f
 
 \subsection{Pedersen commitments}
 
-It turns out you can do something very similar with exponentiation modulo $N$. First you take a generator for the group of integers modulo $N$ (ignoring the technical details on what properties $N$ must have). A generator is just a number $g$ such that
+It turns out you can do something very similar with exponentiation modulo $N$. First you take a generator for the multiplicative group of integers modulo $N$ (ignoring the technical details on what properties $N$ must have). A generator is just a number $g$ such that
 
-\[g^1, g^2, g^3 .... g^{N-1} \]
+\[g^1, g^2, g^3 .... g^{\phi(N-1)} \]
 
-\vskip 0.1 in \noindent produces all the integer values in the group (so it in some sense ``generates'' the whole group). Having chosen a $g$ for $N$, you can create the commitment as
+\vskip 0.1 in \noindent produces all the integer values in the multiplicative group (so it in some sense ``generates'' the whole group), where $\phi$ denotes Euler's totient function. Having chosen a $g$ for $N$, you can create the commitment as
 
 \[C = g^m \ \textrm{mod}\ N \]
 
