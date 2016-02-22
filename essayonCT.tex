@@ -241,7 +241,7 @@ To solve the problem mentioned at the end of the last section, Alice could send 
 \item Alice has public key $A = aG$, so private key $a$.
 \item Bob has public key $B = bG$.
 \item Alice and Bob exchange public keys.
-\item The shared secret is just $S = aB = bA$.
+\item The shared secret is just $S = aB = bA = abG$.
 \end{itemize}
 
 Alice can calculate the former ($aB = S$), Bob can calculate the latter ($bA = S$). Notation is tricky here; you might immediately think ``anyone can find that secret, it's just $A \times B$'', but no: there is no meaning to $A \times B$; you cannot multiply elliptic curve points together. You can only multiply an EC point by a scalar (a number) (and of course `multiply by a scalar' just means add the point to itself that many times). No one not knowing one of $a$ or $b$ can calculate $S$.
