@@ -71,7 +71,7 @@ Starting in a moment, things get technical very fast. It's important to understa
 
 \vskip 0.1 in \noindent  If you're throwing your computations into the cloud for Amazon to do for you, and you're a big corporation doing God knows what, then \textit{only} being able to add numbers is a bit limiting, to say the least, and even more so if it slows the computations down appreciably. But for an application like digital cash this is not \textbf{so} much of a blockage.
 
-\vskip 0.1 in \noindent  To give you an inkling, before diving into the details, consider this simple mathematical fact: $a^b \times a^c = a^{b+c}$. Also, the result is equal to $a^{c+b}$. Notice that the addition of b and c works, and follows the normal addition rule (``commutativity'' - you can swap them round with no effect), even \textbf{after} we've put all the numbers into exponents. This is the kind of ``homomorphism'' that we can use to get the blinding/encryption effect. In certain circumstances, a construction like that can allow you to \textbf{do arithmetic on encrypted amounts}.
+\vskip 0.1 in \noindent  To give you an inkling, before diving into the details, consider this simple mathematical fact: $a^b \times a^c = a^{b+c}$. Also, the result is equal to $a^{c+b}$. Notice that the addition of $b$ and $c$ works, and follows the normal addition rule (``commutativity'' - you can swap them round with no effect), even \textbf{after} we've put all the numbers into exponents. This is the kind of ``homomorphism'' that we can use to get the blinding/encryption effect. In certain circumstances, a construction like that can allow you to \textbf{do arithmetic on encrypted amounts}.
 
 
 \section{How to make the amounts in a transaction private}
@@ -140,7 +140,7 @@ However, for technical reasons we change the notation here. Instead of the messa
 \[C = xG + aH\]
 A note about the generators: $G$ is the generator that's specified as part of the parameters of the secp256k1 curve that Bitcoin uses; i.e. it's exactly the same $G$ as in:
 
-\vskip 0.1 in \noindent Public key = (private key) \times G
+\vskip 0.1 in \noindent Public key = (private key) $\times G$
 
 \vskip 0.1 in \noindent $H$, on the other hand, is not part of the secp256k1 specification. We need $H$ to be basically a random point on the curve. But, just throwing a random one in there would not be secure (at least, not secure against the person who threw it in!) Why? Suppose an evil system designer chooses $H$, such that he knows an $x_H$ which obeys:
 \[H = x_H G \]
@@ -291,7 +291,7 @@ B = C(1,x_B)
 \end{verbatim}
 
 
-\vskip 0.1 in \noindent Now let's consider how the commitments look to Nelly the node. Because $1 + 1 -9 - 4 = -11 = 0 \ \textrm{mod} \ 11$, then adding the input commitments and subtracting the output commitments yields zero. Nelly says - OK! Meanwhile our attacker Alice has created lots of free coins: 13-2 = 11. In reality, the `9' amount might be illegal if we changed to the real $N$ (a 32 bit number, quite a lot bigger than 11!), since it might be bigger than the valid range (even if $< N$), but even if that is the case - the other output of `4', being small, could be be used freely, even though 2 of those 4 coins were not legally derived. The network would never know this and the attacker could spend \textit{this} outputs in new transactions.
+\vskip 0.1 in \noindent Now let's consider how the commitments look to Nelly the node. Because $1 + 1 -9 - 4 = -11 = 0 \ \textrm{mod} \ 11$, then adding the input commitments and subtracting the output commitments yields zero. Nelly says - OK! Meanwhile our attacker Alice has created lots of free coins: 13-2 = 11. In reality, the `9' amount might be illegal if we changed to the real $N$ (a 32 bit number, quite a lot bigger than 11!), since it might be bigger than the valid range (even if $< N$), but even if that is the case - the other output of `4', being small, could be used freely, even though 2 of those 4 coins were not legally derived. The network would never know this and the attacker could spend \textit{this} outputs in new transactions.
 
 \vskip 0.1 in \noindent So modular arithmetic, an essential part of the cryptography, scuppers, it seems, the grand plan to hide the transaction amounts with Pedersen commitments. It would work fine with ordinary numbers in the set of integers (the infinite set $\mathbb{Z}$), but not in a finite group of integers, modulo $N$ for some $N$ such as that in secp256k1 - $N$ is the size of the group, so $kG$ will always be $\in \{0G, 1G, \ldots ,(N-1)G\}$ for integer $k$.
 
@@ -311,7 +311,7 @@ A ring signature solves a problem that's pretty easy to understand: it's related
 
 \vskip 0.1 in \noindent That means, what we're looking for is a situation where the transaction creator (Alice from earlier) can only create a valid commitment such as $C(A)$ \textbf{if} $0 <= A < 100$. Now we can't do that directly - limit the value that Alice commits to - but what we can do is \textit{add} an extra piece of data, which we will call a ``rangeproof'', that proves that the commitment $C(A)$ is a commitment to a value in the range $[0,99]$. It's as if we had 100 cryptographers at the dining table, each one having names $0,1,2..99$, and we could take a ring signature from the group, knowing that 1 of the 100 made the signature; the extra detail is that \textit{he could only sign our special signature because his name was equal to the value of A}.
 
-\vskip 0.1 in \noindent So we know that $A$ is in that range 0 - 99, but we don't know what it is. If we then attach that special signature (=rangeproof) to our input $A$ in our transaction, and do the same for $B$, $C$, $D$, $E$, then we have achieved the goal - the transaction, including the rangeproof for each input and output, \textbf{must} be valid, even though we don't know the amounts. Very important to see: what guarantees the ranges is that Alice couldn't have created valid rangeproofs unless $A$ (and $B$,$C$,$D$,$E$) is in that specific range we decided on.
+\vskip 0.1 in \noindent So we know that $A$ is in that range 0 - 99, but we don't know what it is. If we then attach that special signature (=rangeproof) to our input $A$ in our transaction, and do the same for $B$, $C$, $D$, $E$, then we have achieved the goal - the transaction, including the rangeproof for each input and output, \textbf{must} be valid, even though we don't know the amounts. Very important to see: what guarantees the ranges is that Alice couldn't have created valid rangeproofs unless $A$ (and $B$, $C$, $D$, $E$) is in that specific range we decided on.
 
 \vskip 0.1 in \noindent Now, the basic idea of a ring signature has been known for some time, and there is certainly more than one way to create it. The Borromean ring signature \cite{borromean} is a carefully optimised form of a signature based on a clever combination of hash functions and elliptic curve calculations (the latter very similar to what we've already discussed for Pedersen commitments):
 
@@ -448,7 +448,7 @@ where $C$ is the commitment for this output, namely the pubkey we calculated bef
    52864758971156851515686729448875905407492270100334584954397099441012230985012L)
 \end{verbatim}
 
-To do this, we have to make sure that the blinding factors $x_{0} + x_{1} + x_{2} + \ldots + x{15}$ add up to $x$, i.e. the value (in hex) c423ee7e2758e86254e110fd39eee4eaa232cf94fbaab710fdf811586937499e, that we calculated as the overall blinding factor for $C$.
+To do this, we have to make sure that the blinding factors $x_{0} + x_{1} + x_{2} + \ldots + x_{15}$ add up to $x$, i.e. the value (in hex) c423ee7e2758e86254e110fd39eee4eaa232cf94fbaab710fdf811586937499e, that we calculated as the overall blinding factor for $C$.
 
 \vskip 0.1 in \noindent So far, so good, but let's not forget - the receiver of the transaction needs to be able to check that the claimed amount is correct. How is that achieved?
 
