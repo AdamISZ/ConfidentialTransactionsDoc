@@ -175,15 +175,21 @@ We use a known mathematical trick to find $H_y$ efficiently \cite{residue}:
 	>>> H = (H_x, H_y)
 \end{verbatim}
 
-Just for completeness, here's the compressed format for $H$:
+\vskip 0.1 in \noindent There are two roots; the other is just the negative mod $N$; it's:
+\begin{verbatim}
+>>> Hy = (btc.N-x) % btc.N
+>>> Hy
+22537504475708154238330251540244790414456712057027634449505794721772594235652L
+\end{verbatim}
+, this is the one chosen. Just for completeness, here's the compressed format for $H$:
 \begin{verbatim}
 	>>> btc.encode_pubkey(H,'hex_compressed')
-	'0350929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0'
+	'0250929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0'
 \end{verbatim}
 
-\vskip 0.1 in \noindent (Amusing side note: the pubkey $H$ in Bitcoin corresponds to the address:
-\vskip 0.1 in \noindent 1D8eDztgv79J59V7UBBpNGnRE6hjstqKb5
-\vskip 0.1 in \noindent If anyone ever published a spend from that address on the Bitcoin network, it would imply that $x_H$ is known, which would imply that the system described here is broken!)
+\vskip 0.1 in \noindent (Amusing side note: the pubkey $H$ in Bitcoin corresponds to the addresses (compressed, uncompressed):
+\vskip 0.1 in \noindent 1CL6niRb19faMRnYSr4N135wp7YhP44mKd, 1Jp8T2cUdqfcq6P3wECKvcMJu27AByk2B
+\vskip 0.1 in \noindent If anyone ever published a spend from one of those addresses on the Bitcoin network, it would imply that $x_H$ is known, which would imply that the system described here is broken!)
 
 \subsection{The basic layout of a blinded transaction}
 
