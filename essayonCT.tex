@@ -348,18 +348,18 @@ Then, you just reconstruct the hash: $H(K || m)$. Does it equal $e$? If so, the 
 \begin{enumerate}
 \item Choose a nonce for himself, $k_D$, at random. Make $K_D = k_{D}G$.
 \item Make the message hash for the next node Edward: $e_E = H(K_D||m||E)$ (we append 'E', or a number, to reference this vertex in the ring).
-\item Choose a signature value $s_E$, for Edward, at random. From this, calculate the corresponding $K_E$ value: $K_E = s_{E}G +e_{E}P_{E}$.
+\item Choose a signature value $s_E$, for Edward, at random. From this, calculate the corresponding $K_E$ value: $K_E = s_{E}G -e_{E}P_{E}$.
 \item Calculate the e-value for Boris, the next in the loop: $e_B = H(K_E || m || B)$.
-\item Choose a signature value $s_B$ for Boris, at random, and calculate $K_B = s_{B}G + e_{B}P_{B}$.
+\item Choose a signature value $s_B$ for Boris, at random, and calculate $K_B = s_{B}G - e_{B}P_{B}$.
 \item Calculate the e-value for Charlie: $e_C = H(K_B || m || C)$.
-\item Choose the signature at random for Charlie: $s_C$. $K_C = s_{C}G + e_{C}P_{C}$.
+\item Choose the signature at random for Charlie: $s_C$. $K_C = s_{C}G - e_{C}P_{C}$.
 \item Calculate the e-value for his own node in the ring: $e_D = H(K_C || m || D)$.
-\item Finally, he can make a \textbf{real} signature $s_D$ for himself: He needs $s_D$ such that $K_D$ (we chose it in step 1) $= s_{D}G + e_{D}P_{D}$. To do that, we rearranges the equation:
+\item Finally, he can make a \textbf{real} signature $s_D$ for himself: He needs $s_D$ such that $K_D$ (we chose it in step 1) $= s_{D}G - e_{D}P_{D}$. To do that, we rearranges the equation:
 \begin{eqnarray*}
-K_D &=& s_{D}G + e_{D}P_D \\
-k_{D}G &=& s_{D}G + e_{D}x_{D}G \\
-s_{D}G &=& \left(e_{D}x_{D} - k_{D}\right)G \\
-s_D &=& e_{D}x_{D} - k_D
+K_D &=& s_{D}G - e_{D}P_D \\
+k_{D}G &=& s_{D}G - e_{D}x_{D}G \\
+s_{D}G &=& \left(e_{D}x_{D} + k_{D}\right)G \\
+s_D &=& e_{D}x_{D} + k_D
 \end{eqnarray*}
 \end{enumerate}
 
@@ -369,7 +369,7 @@ s_D &=& e_{D}x_{D} - k_D
 \[(e_B, s_B, s_C, s_D, s_E)\]
 \vskip 0.1 in \noindent So to publish a ring signature for 4 parties in this system, we need to publish 5 32 byte numbers. 3 of the 4 $s$ values are just random nonsense, but the actual, real signature guarantees that a verifier will know that one of the 4 has signed with his private key, while not being able to tell which (as the numbers are indistinguishable from random).
 
-\vskip 0.1 in \noindent How does it look from a verifier's point of view? He can start at the node on the ring for which he has the $e$ value (it can be any, but in this case Boris). He can calculate $K_B = s_{B}G + e_{B}P_B$. From that, he can calculate the next $e$ value: $e_C = H(K || m || C)$, check the next sig value, and so on round the loop until he comes back to $e_B$ at the beginning. The signature is verified if he can recreate this hash correctly.
+\vskip 0.1 in \noindent How does it look from a verifier's point of view? He can start at the node on the ring for which he has the $e$ value (it can be any, but in this case Boris). He can calculate $K_B = s_{B}G - e_{B}P_B$. From that, he can calculate the next $e$ value: $e_C = H(K || m || C)$, check the next sig value, and so on round the loop until he comes back to $e_B$ at the beginning. The signature is verified if he can recreate this hash correctly.
 
 \vskip 0.1 in \noindent A high level understanding might be: a single signature uses a feedback loop to prevent forging; the ring signature version stretches out the feedback loop over a set of participants by using the chaining-signature design. So the signature is still impossible to forge in toto, unless you can short-circuit that feedback by having one or more of the private keys.
 
